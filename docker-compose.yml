@@ -20,6 +20,25 @@ services:
       retries: 10
       start_period: 15s
 
+  # При каждом `compose up`: применяет database/schema.sql от root через клиент MySQL (ещё до старта PHP).
+  # Нужно, если том MySQL уже был без базы или у учётки приложения нет CREATE — сидер тогда только наполняет данные.
+  mysql-bootstrap:
+    image: mysql:8.0
+    restart: no
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - ./database/schema.sql:/schema.sql:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -eu
+        export MYSQL_PWD="$$MYSQL_ROOT_PASSWORD"
+        mysql -h mysql --protocol=TCP -uroot < /schema.sql
+
   php:
     build: .
     container_name: mindbase-php
@@ -37,6 +56,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      mysql-bootstrap:
+        condition: service_completed_successfully
 
 volumes:
   mindbase_mysql_data:

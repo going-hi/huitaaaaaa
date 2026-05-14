@@ -5,6 +5,7 @@
  *
  * Из корня: php database/seed.php
  * В Docker: docker compose exec php php database/seed.php
+ * (перед этим сервис mysql-bootstrap в docker-compose прогоняет database/schema.sql при `compose up`)
  *
  * Если база уже есть (Docker MYSQL_DATABASE или админ создал вручную) — право CREATE не нужно.
  * CREATE DATABASE выполняется только когда базы нет (хостинг/облако часто его запрещает для приложения).
@@ -49,7 +50,7 @@ function mb_extract_users_table_ddl(string $schemaPath): string
     return trim($matches[0]);
 }
 
-$link = mysqli_connect($host, $user, $pass, $dbName, $port);
+$link = @mysqli_connect($host, $user, $pass, $dbName, $port);
 if ($link !== false) {
     $link->set_charset('utf8mb4');
 } else {
