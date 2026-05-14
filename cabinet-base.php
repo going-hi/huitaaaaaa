@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/lib/bootstrap.php';
 require_once __DIR__ . '/lib/auth.php';
+require_once __DIR__ . '/lib/cabinet-nav.php';
 mb_require_login();
 $user = mb_current_user();
 ?>
@@ -41,21 +42,21 @@ $user = mb_current_user();
   <div class="cabinet-layout">
     <aside class="cabinet-sidebar">
       <div class="cabinet-sidebar-head">
-        <h2 class="cabinet-sidebar-title">Разделы</h2>
+        <h2 class="cabinet-sidebar-title">Навигация</h2>
       </div>
-      <nav class="cabinet-nav">
-        <p class="cabinet-nav-label">Кабинет</p>
-        <a href="cabinet.php" class="cabinet-nav-item">Обзор</a>
-        <a href="cabinet-base.php" class="cabinet-nav-item active">Моя база знаний</a>
-        <a href="cabinet-profile.php" class="cabinet-nav-item">Профиль</a>
-        <a href="cabinet-settings.php" class="cabinet-nav-item">Настройки</a>
+      <?php
+      mb_cabinet_nav_render(
+          'base',
+          <<<'HTML'
         <p class="cabinet-nav-label">Статьи</p>
         <a href="#welcome" class="cabinet-nav-item cabinet-nav-item--sub active" data-hash-nav>Добро пожаловать</a>
         <a href="#rules" class="cabinet-nav-item cabinet-nav-item--sub" data-hash-nav>Правила оформления</a>
         <a href="#sections" class="cabinet-nav-item cabinet-nav-item--sub" data-hash-nav>Как добавить раздел</a>
         <a href="#search" class="cabinet-nav-item cabinet-nav-item--sub" data-hash-nav>Поиск по базе</a>
         <a href="#export" class="cabinet-nav-item cabinet-nav-item--sub" data-hash-nav>Экспорт данных</a>
-      </nav>
+HTML
+      );
+      ?>
     </aside>
 
     <main class="cabinet-main">

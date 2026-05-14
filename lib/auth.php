@@ -183,7 +183,15 @@ function mb_current_request_allowed_page(): ?string
         return null;
     }
     $base = basename($path);
-    $allow = ['cabinet.php', 'cabinet-base.php', 'cabinet-profile.php', 'cabinet-settings.php'];
+    $allow = [
+        'cabinet.php',
+        'cabinet-base.php',
+        'cabinet-profile.php',
+        'cabinet-settings.php',
+        'knowledge-catalog.php',
+        'learning-materials.php',
+        'documents.php',
+    ];
 
     return in_array($base, $allow, true) ? $base : null;
 }

@@ -50,7 +50,15 @@ function mb_csrf_regenerate(): void
 function mb_login_redirect_target(?string $next): string
 {
     $default = 'cabinet.php';
-    $allow = ['cabinet.php', 'cabinet-base.php', 'cabinet-profile.php', 'cabinet-settings.php'];
+    $allow = [
+        'cabinet.php',
+        'cabinet-base.php',
+        'cabinet-profile.php',
+        'cabinet-settings.php',
+        'knowledge-catalog.php',
+        'learning-materials.php',
+        'documents.php',
+    ];
     if ($next === null) {
         return $default;
     }

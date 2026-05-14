@@ -6,6 +6,9 @@ require_once __DIR__ . '/lib/bootstrap.php';
 require_once __DIR__ . '/lib/auth.php';
 
 $user = mb_current_user();
+$loginCatalog = 'login.php?' . http_build_query(['next' => 'knowledge-catalog.php']);
+$loginLearning = 'login.php?' . http_build_query(['next' => 'learning-materials.php']);
+$loginDocuments = 'login.php?' . http_build_query(['next' => 'documents.php']);
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -33,9 +36,15 @@ $user = mb_current_user();
         <li><a href="index.php#how">Как это работает</a></li>
         <li><a href="index.php#faq">Вопросы</a></li>
         <?php if ($user !== null): ?>
+        <li><a href="knowledge-catalog.php">Каталог</a></li>
+        <li><a href="learning-materials.php">Обучение</a></li>
+        <li><a href="documents.php">Документы</a></li>
         <li><a href="cabinet.php" class="btn btn-ghost">Кабинет</a></li>
         <li><a href="logout.php" class="btn btn-outline">Выйти</a></li>
         <?php else: ?>
+        <li><a href="<?= mb_h($loginCatalog) ?>">Каталог</a></li>
+        <li><a href="<?= mb_h($loginLearning) ?>">Обучение</a></li>
+        <li><a href="<?= mb_h($loginDocuments) ?>">Документы</a></li>
         <li><a href="login.php" class="btn btn-ghost">Войти</a></li>
         <li><a href="register.php" class="btn btn-primary">Начать бесплатно</a></li>
         <?php endif; ?>

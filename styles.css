@@ -1604,3 +1604,97 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== Страницы платформы (каталог, обучение, документы) ===== */
+.cabinet-action-card--static {
+  cursor: default;
+  pointer-events: none;
+}
+
+.cabinet-action-card--static:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--border);
+}
+
+.cabinet-actions-grid--catalog {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.cabinet-tree {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+.cabinet-tree ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding-left: 22px;
+  border-left: 1px solid var(--border);
+}
+
+.cabinet-tree li {
+  margin-bottom: 8px;
+}
+
+.cabinet-tree strong {
+  color: var(--text);
+}
+
+.cabinet-learning-list {
+  margin: 0;
+  padding-left: 22px;
+  color: var(--text-muted);
+  line-height: 1.75;
+}
+
+.cabinet-learning-list li {
+  margin-bottom: 10px;
+}
+
+.cabinet-panel--table {
+  padding: 0;
+  overflow: hidden;
+}
+
+.cabinet-table-wrap {
+  overflow-x: auto;
+}
+
+.cabinet-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.cabinet-table th,
+.cabinet-table td {
+  padding: 14px 18px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.cabinet-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.cabinet-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.cabinet-table td {
+  color: var(--text-muted);
+}
+
+.cabinet-table td:first-child {
+  color: var(--text);
+  font-weight: 500;
+}

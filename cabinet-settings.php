@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/lib/bootstrap.php';
 require_once __DIR__ . '/lib/auth.php';
+require_once __DIR__ . '/lib/cabinet-nav.php';
 mb_require_login();
 $user = mb_current_user();
 ?>
@@ -39,16 +40,9 @@ $user = mb_current_user();
   <div class="cabinet-layout">
     <aside class="cabinet-sidebar">
       <div class="cabinet-sidebar-head">
-        <h2 class="cabinet-sidebar-title">Личный кабинет</h2>
+        <h2 class="cabinet-sidebar-title">Навигация</h2>
       </div>
-      <nav class="cabinet-nav">
-        <p class="cabinet-nav-label">Главное</p>
-        <a href="cabinet.php" class="cabinet-nav-item">Обзор</a>
-        <a href="cabinet-base.php" class="cabinet-nav-item">Моя база знаний</a>
-        <p class="cabinet-nav-label">Аккаунт</p>
-        <a href="cabinet-profile.php" class="cabinet-nav-item">Профиль</a>
-        <a href="cabinet-settings.php" class="cabinet-nav-item active">Настройки</a>
-      </nav>
+      <?php mb_cabinet_nav_render('settings'); ?>
     </aside>
 
     <main class="cabinet-main">
