@@ -1,4 +1,8 @@
--- Выполняется при первом старте контейнера (БД mindbase уже создана из MYSQL_DATABASE)
+-- Первый старт: entrypoint создаёт БД из MYSQL_DATABASE; если том старый без БД — создаём здесь.
+CREATE DATABASE IF NOT EXISTS mindbase
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
 USE mindbase;
 
 CREATE TABLE IF NOT EXISTS users (
