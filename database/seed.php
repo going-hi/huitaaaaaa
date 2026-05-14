@@ -1,22 +1,52 @@
 <?php
 
 /**
- * Сидер: создаёт БД и таблицы из database/schema.sql, затем добавляет тестовых пользователей.
+ * Сидер: создаёт БД (имя из MYSQL_DATABASE), таблицы из DDL в database/schema.sql, затем тестовые users.
  *
  * Из корня: php database/seed.php
  * В Docker: docker compose exec php php database/seed.php
+ *
+ * Нужны права на CREATE DATABASE и работу с выбранной БД (обычно root или админ СУБД).
  */
 
 declare(strict_types=1);
+
+mysqli_report(MYSQLI_REPORT_OFF);
 
 $host = getenv('MYSQL_HOST') ?: '127.0.0.1';
 $port = (int) (getenv('MYSQL_PORT') ?: 3306);
 $user = getenv('MYSQL_USER') ?: 'root';
 $pass = getenv('MYSQL_PASSWORD') !== false ? getenv('MYSQL_PASSWORD') : 'root';
 $dbName = getenv('MYSQL_DATABASE') ?: 'mindbase';
+if ($dbName === '') {
+    $dbName = 'mindbase';
+}
 
 $root = dirname(__DIR__);
 $schemaPath = $root . '/database/schema.sql';
+
+/**
+ * Экранирование идентификатора MySQL (`столбец`, `таблица`).
+ */
+function mb_mysql_ident(string $name): string
+{
+    return '`' . str_replace('`', '``', $name) . '`';
+}
+
+/** Вытащить DDL CREATE TABLE … users из schema.sql (без CREATE DATABASE / USE). */
+function mb_extract_users_table_ddl(string $schemaPath): string
+{
+    $content = file_get_contents($schemaPath);
+    if ($content === false) {
+        fwrite(STDERR, "Не удалось прочитать файл схемы: {$schemaPath}\n");
+        exit(1);
+    }
+    if (!preg_match('/CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+users\b[\s\S]+?;/m', $content, $matches)) {
+        fwrite(STDERR, "В {$schemaPath} не найден блок CREATE TABLE users.\n");
+        exit(1);
+    }
+    return trim($matches[0]);
+}
 
 $link = mysqli_connect($host, $user, $pass, '', $port);
 if ($link === false) {
@@ -25,29 +55,25 @@ if ($link === false) {
 }
 $link->set_charset('utf8mb4');
 
-$sql = file_get_contents($schemaPath);
-if ($sql === false) {
-    fwrite(STDERR, "Не удалось прочитать файл схемы: {$schemaPath}\n");
-    exit(1);
-}
-
-if (!$link->multi_query($sql)) {
-    fwrite(STDERR, 'Ошибка применения схемы: ' . $link->error . "\n");
-    exit(1);
-}
-do {
-    if ($result = $link->store_result()) {
-        $result->free();
-    }
-} while ($link->more_results() && $link->next_result());
-
-if ($link->errno !== 0) {
-    fwrite(STDERR, 'Ошибка применения схемы: ' . $link->error . "\n");
+$dbIdent = mb_mysql_ident($dbName);
+$createDbSql = "CREATE DATABASE IF NOT EXISTS {$dbIdent} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+if (!$link->query($createDbSql)) {
+    fwrite(STDERR, 'Не удалось создать базу «' . $dbName . '»: ' . $link->error . "\n");
     exit(1);
 }
 
 if (!$link->select_db($dbName)) {
-    fwrite(STDERR, 'Не удалось выбрать БД: ' . $link->error . "\n");
+    fwrite(
+        STDERR,
+        'Не удалось открыть базу «' . $dbName . '»: ' . $link->error . "\n"
+            . "(проверьте права пользователя {$user} на эту базу или задайте MYSQL_USER / MYSQL_PASSWORD с нужными правами.)\n"
+    );
+    exit(1);
+}
+
+$tableSql = mb_extract_users_table_ddl($schemaPath);
+if (!$link->query($tableSql)) {
+    fwrite(STDERR, 'Не удалось создать таблицы: ' . $link->error . "\n");
     exit(1);
 }
 
