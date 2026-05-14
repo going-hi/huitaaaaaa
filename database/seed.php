@@ -6,7 +6,8 @@
  * Из корня: php database/seed.php
  * В Docker: docker compose exec php php database/seed.php
  *
- * Нужны права на CREATE DATABASE и работу с выбранной БД (обычно root или админ СУБД).
+ * Если база уже есть (Docker MYSQL_DATABASE или админ создал вручную) — право CREATE не нужно.
+ * CREATE DATABASE выполняется только когда базы нет (хостинг/облако часто его запрещает для приложения).
  */
 
 declare(strict_types=1);
@@ -48,27 +49,51 @@ function mb_extract_users_table_ddl(string $schemaPath): string
     return trim($matches[0]);
 }
 
-$link = mysqli_connect($host, $user, $pass, '', $port);
-if ($link === false) {
-    fwrite(STDERR, 'Ошибка подключения MySQL: ' . mysqli_connect_error() . "\n");
-    exit(1);
-}
-$link->set_charset('utf8mb4');
+$link = mysqli_connect($host, $user, $pass, $dbName, $port);
+if ($link !== false) {
+    $link->set_charset('utf8mb4');
+} else {
+    $link = mysqli_connect($host, $user, $pass, '', $port);
+    if ($link === false) {
+        fwrite(STDERR, 'Ошибка подключения MySQL: ' . mysqli_connect_error() . "\n");
+        exit(1);
+    }
+    $link->set_charset('utf8mb4');
 
-$dbIdent = mb_mysql_ident($dbName);
-$createDbSql = "CREATE DATABASE IF NOT EXISTS {$dbIdent} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
-if (!$link->query($createDbSql)) {
-    fwrite(STDERR, 'Не удалось создать базу «' . $dbName . '»: ' . $link->error . "\n");
-    exit(1);
-}
+    $like = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $dbName);
+    $like = $link->real_escape_string($like);
+    $res = $link->query("SHOW DATABASES LIKE '{$like}'");
+    $dbExists = $res instanceof mysqli_result && $res->num_rows > 0;
+    if ($res instanceof mysqli_result) {
+        $res->free();
+    }
 
-if (!$link->select_db($dbName)) {
-    fwrite(
-        STDERR,
-        'Не удалось открыть базу «' . $dbName . '»: ' . $link->error . "\n"
-            . "(проверьте права пользователя {$user} на эту базу или задайте MYSQL_USER / MYSQL_PASSWORD с нужными правами.)\n"
-    );
-    exit(1);
+    if ($dbExists) {
+        if (!$link->select_db($dbName)) {
+            fwrite(
+                STDERR,
+                'База «' . $dbName . '» есть на сервере, но недоступна для пользователя '
+                . $user . ': ' . $link->error . "\n"
+                . "Выдайте права GRANT или проверьте MYSQL_USER / MYSQL_PASSWORD.\n"
+            );
+            exit(1);
+        }
+    } else {
+        $dbIdent = mb_mysql_ident($dbName);
+        $createDbSql = "CREATE DATABASE IF NOT EXISTS {$dbIdent} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+        if (!$link->query($createDbSql)) {
+            fwrite(
+                STDERR,
+                'Базы «' . $dbName . '» нет, а создать её не удалось: ' . $link->error . "\n"
+                    . "Создайте пустую БД вручную (или дайте пользователю привилегию CREATE), затем снова: php database/seed.php\n"
+            );
+            exit(1);
+        }
+        if (!$link->select_db($dbName)) {
+            fwrite(STDERR, 'База создана, но select_db упал: ' . $link->error . "\n");
+            exit(1);
+        }
+    }
 }
 
 $tableSql = mb_extract_users_table_ddl($schemaPath);
