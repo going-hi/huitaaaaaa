@@ -1,9 +1,4 @@
--- Первый старт: entrypoint создаёт БД из MYSQL_DATABASE; если том старый без БД — создаём здесь.
-CREATE DATABASE IF NOT EXISTS mindbase
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
-
-USE mindbase;
+-- Только DDL таблицы (выбор БД задаёт клиент или MYSQL_DATABASE при импорте в init-db.d)
 
 CREATE TABLE IF NOT EXISTS users (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,

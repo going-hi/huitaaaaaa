@@ -8,11 +8,15 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: mindbase
+      # Учётка приложения со всеми правами только на базу mindbase (обходит ограниченный root@%).
+      MYSQL_USER: mindbase
+      MYSQL_PASSWORD: mindbase
     ports:
       - "3306:3306"
     volumes:
       - mindbase_mysql_data:/var/lib/mysql
-      - ./database/docker-init:/docker-entrypoint-initdb.d:ro
+      - mindbase_mysql_run:/var/run/mysqld
+      - ./database/tables.sql:/docker-entrypoint-initdb.d/99-tables.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD || exit 1"]
       interval: 5s
@@ -20,15 +24,16 @@ services:
       retries: 10
       start_period: 15s
 
-  # При каждом `compose up`: применяет database/schema.sql от root через клиент MySQL (ещё до старта PHP).
-  # Нужно, если том MySQL уже был без базы или у учётки приложения нет CREATE — сидер тогда только наполняет данные.
+  # Через сокет делает то, что нельзя ограниченному root@%: база mindbase и пользователь mindbase (совпадает с MYSQL_USER).
   mysql-bootstrap:
     image: mysql:8.0
     restart: no
     environment:
       MYSQL_ROOT_PASSWORD: root
     volumes:
-      - ./database/schema.sql:/schema.sql:ro
+      - ./database/bootstrap-docker.sql:/bootstrap-docker.sql:ro
+      - ./database/tables.sql:/tables.sql:ro
+      - mindbase_mysql_run:/var/run/mysqld
     depends_on:
       mysql:
         condition: service_healthy
@@ -37,7 +42,9 @@ services:
       - |
         set -eu
         export MYSQL_PWD="$$MYSQL_ROOT_PASSWORD"
-        mysql -h mysql --protocol=TCP -uroot < /schema.sql
+        SOCK=/var/run/mysqld/mysqld.sock
+        mysql --protocol=SOCKET --socket="$$SOCK" -uroot < /bootstrap-docker.sql
+        mysql --protocol=SOCKET --socket="$$SOCK" -uroot mindbase < /tables.sql
 
   php:
     build: .
@@ -50,8 +57,8 @@ services:
     environment:
       MYSQL_HOST: mysql
       MYSQL_PORT: "3306"
-      MYSQL_USER: root
-      MYSQL_PASSWORD: root
+      MYSQL_USER: mindbase
+      MYSQL_PASSWORD: mindbase
       MYSQL_DATABASE: mindbase
     depends_on:
       mysql:
@@ -61,3 +68,4 @@ services:
 
 volumes:
   mindbase_mysql_data:
+  mindbase_mysql_run:

@@ -1,14 +1,11 @@
 <?php
 
 /**
- * Сидер: создаёт БД (имя из MYSQL_DATABASE), таблицы из DDL в database/schema.sql, затем тестовые users.
+ * Сидер: создаёт БД/таблицы при необходимости, затем тестовых users.
+ * DDL таблицы — database/tables.sql (CREATE TABLE). При Docker сначала срабатывают MYSQL_* и mysql-bootstrap.
  *
  * Из корня: php database/seed.php
  * В Docker: docker compose exec php php database/seed.php
- * (перед этим сервис mysql-bootstrap в docker-compose прогоняет database/schema.sql при `compose up`)
- *
- * Если база уже есть (Docker MYSQL_DATABASE или админ создал вручную) — право CREATE не нужно.
- * CREATE DATABASE выполняется только когда базы нет (хостинг/облако часто его запрещает для приложения).
  */
 
 declare(strict_types=1);
@@ -25,7 +22,7 @@ if ($dbName === '') {
 }
 
 $root = dirname(__DIR__);
-$schemaPath = $root . '/database/schema.sql';
+$tablesSqlPath = $root . '/database/tables.sql';
 
 /**
  * Экранирование идентификатора MySQL (`столбец`, `таблица`).
@@ -35,16 +32,16 @@ function mb_mysql_ident(string $name): string
     return '`' . str_replace('`', '``', $name) . '`';
 }
 
-/** Вытащить DDL CREATE TABLE … users из schema.sql (без CREATE DATABASE / USE). */
-function mb_extract_users_table_ddl(string $schemaPath): string
+/** DDL таблицы users из database/tables.sql */
+function mb_extract_users_table_ddl(string $tablesPath): string
 {
-    $content = file_get_contents($schemaPath);
+    $content = file_get_contents($tablesPath);
     if ($content === false) {
-        fwrite(STDERR, "Не удалось прочитать файл схемы: {$schemaPath}\n");
+        fwrite(STDERR, "Не удалось прочитать файл: {$tablesPath}\n");
         exit(1);
     }
     if (!preg_match('/CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+users\b[\s\S]+?;/m', $content, $matches)) {
-        fwrite(STDERR, "В {$schemaPath} не найден блок CREATE TABLE users.\n");
+        fwrite(STDERR, "В {$tablesPath} не найден блок CREATE TABLE users.\n");
         exit(1);
     }
     return trim($matches[0]);
@@ -97,7 +94,7 @@ if ($link !== false) {
     }
 }
 
-$tableSql = mb_extract_users_table_ddl($schemaPath);
+$tableSql = mb_extract_users_table_ddl($tablesSqlPath);
 if (!$link->query($tableSql)) {
     fwrite(STDERR, 'Не удалось создать таблицы: ' . $link->error . "\n");
     exit(1);
