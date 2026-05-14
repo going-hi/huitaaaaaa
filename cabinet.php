@@ -54,23 +54,48 @@ $cabinetNotice = mb_flash_take('cabinet_notice');
       <p class="auth-alert auth-alert--success cabinet-notice" role="status"><?= mb_h($cabinetNotice) ?></p>
       <?php endif; ?>
       <div class="cabinet-dashboard">
+        <p class="cabinet-greeting">Здравствуйте, <?= mb_h($user['name']) ?></p>
         <h1 class="cabinet-page-title">Личный кабинет</h1>
-        <p class="cabinet-page-lead">Обзор: краткая сводка по базе знаний и быстрые действия.</p>
+        <p class="cabinet-page-lead">Сводка за сегодня и быстрые переходы. База активна: за неделю добавлено 9 материалов, 214 просмотров статей.</p>
 
-        <div class="cabinet-stats-grid">
+        <div class="cabinet-stats-grid cabinet-stats-grid--4">
           <article class="cabinet-stat-card">
-            <span class="cabinet-stat-value">24</span>
-            <span class="cabinet-stat-label">Статей</span>
+            <span class="cabinet-stat-value">31</span>
+            <span class="cabinet-stat-label">Статей в вашем доступе</span>
           </article>
           <article class="cabinet-stat-card">
-            <span class="cabinet-stat-value">6</span>
-            <span class="cabinet-stat-label">Разделов</span>
+            <span class="cabinet-stat-value">8</span>
+            <span class="cabinet-stat-label">Разделов с избранным</span>
           </article>
           <article class="cabinet-stat-card">
-            <span class="cabinet-stat-value">3</span>
-            <span class="cabinet-stat-label">Участников</span>
+            <span class="cabinet-stat-value">5</span>
+            <span class="cabinet-stat-label">Участников команды</span>
+          </article>
+          <article class="cabinet-stat-card">
+            <span class="cabinet-stat-value">214</span>
+            <span class="cabinet-stat-label">Просмотров за 7 дней</span>
           </article>
         </div>
+
+        <h2 class="cabinet-section-heading">Лента активности</h2>
+        <ul class="cabinet-feed cabinet-feed--compact">
+          <li class="cabinet-feed-item">
+            <span class="cabinet-feed-title">Светлана К. опубликовала «Чек-лист релиза v2.3»</span>
+            <span class="cabinet-feed-meta">Продукт и API · 14.05.2026 10:22</span>
+          </li>
+          <li class="cabinet-feed-item">
+            <span class="cabinet-feed-title">Добавлен комментарий к «Runbook: интеграция с CRM»</span>
+            <span class="cabinet-feed-meta">Поддержка · 14.05.2026 09:05</span>
+          </li>
+          <li class="cabinet-feed-item">
+            <span class="cabinet-feed-title">Автоматическое напоминание: пройти тест ИБ до 20.05</span>
+            <span class="cabinet-feed-meta">Обучение · 13.05.2026 18:00</span>
+          </li>
+          <li class="cabinet-feed-item">
+            <span class="cabinet-feed-title">Файл «Каталог API-ключей» заменён на новую версию</span>
+            <span class="cabinet-feed-meta">Документы · ИБ · 14.05.2026 08:00</span>
+          </li>
+        </ul>
 
         <h2 class="cabinet-section-heading">Быстрые действия</h2>
         <div class="cabinet-actions-grid">
@@ -107,7 +132,7 @@ $cabinetNotice = mb_flash_take('cabinet_notice');
         </div>
 
         <div class="cabinet-tip">
-          <strong>Совет.</strong> Используйте поиск в разделе «Моя база знаний», чтобы быстрее находить нужные статьи.
+          <strong>Совет.</strong> В строке поиска вверху можно искать сразу по всей базе. Для узких тем откройте <a href="knowledge-catalog.php">каталог знаний</a> и сузьте раздел.
         </div>
       </div>
     </main>
