@@ -33,7 +33,7 @@ $user = mb_current_user();
       </div>
       <div class="cabinet-header-actions">
         <span class="cabinet-user-chip" title="<?= mb_h($user['email']) ?>"><?= mb_h($user['name']) ?></span>
-        <a href="cabinet.php" class="btn btn-ghost btn-sm">Обзор</a>
+        <a href="cabinet.php" class="btn btn-ghost btn-sm">Личный кабинет</a>
         <a href="logout.php" class="btn btn-outline btn-sm">Выйти</a>
       </div>
     </div>

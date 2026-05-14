@@ -9,6 +9,7 @@ $user = mb_current_user();
 $loginCatalog = 'login.php?' . http_build_query(['next' => 'knowledge-catalog.php']);
 $loginLearning = 'login.php?' . http_build_query(['next' => 'learning-materials.php']);
 $loginDocuments = 'login.php?' . http_build_query(['next' => 'documents.php']);
+$loginCabinet = 'login.php?' . http_build_query(['next' => 'cabinet.php']);
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -39,12 +40,13 @@ $loginDocuments = 'login.php?' . http_build_query(['next' => 'documents.php']);
         <li><a href="knowledge-catalog.php">Каталог</a></li>
         <li><a href="learning-materials.php">Обучение</a></li>
         <li><a href="documents.php">Документы</a></li>
-        <li><a href="cabinet.php" class="btn btn-ghost">Кабинет</a></li>
+        <li><a href="cabinet.php" class="btn btn-ghost">Личный кабинет</a></li>
         <li><a href="logout.php" class="btn btn-outline">Выйти</a></li>
         <?php else: ?>
         <li><a href="<?= mb_h($loginCatalog) ?>">Каталог</a></li>
         <li><a href="<?= mb_h($loginLearning) ?>">Обучение</a></li>
         <li><a href="<?= mb_h($loginDocuments) ?>">Документы</a></li>
+        <li><a href="<?= mb_h($loginCabinet) ?>">Личный кабинет</a></li>
         <li><a href="login.php" class="btn btn-ghost">Войти</a></li>
         <li><a href="register.php" class="btn btn-primary">Начать бесплатно</a></li>
         <?php endif; ?>
@@ -76,7 +78,7 @@ $loginDocuments = 'login.php?' . http_build_query(['next' => 'documents.php']);
         </p>
         <div class="hero-actions">
           <?php if ($user !== null): ?>
-          <a href="cabinet.php" class="btn btn-primary btn-lg">Открыть кабинет</a>
+          <a href="cabinet.php" class="btn btn-primary btn-lg">Личный кабинет</a>
           <?php else: ?>
           <a href="register.php" class="btn btn-primary btn-lg">Создать базу знаний</a>
           <?php endif; ?>
@@ -279,7 +281,7 @@ $loginDocuments = 'login.php?' . http_build_query(['next' => 'documents.php']);
         <p>Платформа полностью бесплатна. Присоединяйтесь к командам, которые уже используют MindBase.</p>
         <div class="cta-actions">
           <?php if ($user !== null): ?>
-          <a href="cabinet.php" class="btn btn-primary btn-lg">Перейти в кабинет</a>
+          <a href="cabinet.php" class="btn btn-primary btn-lg">Личный кабинет</a>
           <?php else: ?>
           <a href="register.php" class="btn btn-primary btn-lg">Начать бесплатно</a>
           <?php endif; ?>
@@ -305,6 +307,11 @@ $loginDocuments = 'login.php?' . http_build_query(['next' => 'documents.php']);
         <div>
           <h4>Продукт</h4>
           <a href="index.php#features">Возможности</a>
+          <?php if ($user !== null): ?>
+          <a href="cabinet.php">Личный кабинет</a>
+          <?php else: ?>
+          <a href="<?= mb_h($loginCabinet) ?>">Личный кабинет</a>
+          <?php endif; ?>
           <a href="#">Интеграции</a>
           <a href="#">Документация</a>
         </div>

@@ -27,7 +27,7 @@ function mb_cabinet_nav_render(string $active, string $suffix = ''): void
         <a href="learning-materials.php" class="<?= $c('learning') ?>">Обучающие материалы</a>
         <a href="documents.php" class="<?= $c('documents') ?>">Документы</a>
         <p class="cabinet-nav-label">Личный кабинет</p>
-        <a href="cabinet.php" class="<?= $c('overview') ?>">Обзор</a>
+        <a href="cabinet.php" class="<?= $c('overview') ?>">Личный кабинет</a>
         <a href="cabinet-base.php" class="<?= $c('base') ?>">Моя база знаний</a>
         <p class="cabinet-nav-label">Аккаунт</p>
         <a href="cabinet-profile.php" class="<?= $c('profile') ?>">Профиль</a>
