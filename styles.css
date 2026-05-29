@@ -1765,9 +1765,10 @@ body {
 
 .cabinet-table-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
   align-items: center;
+  justify-content: flex-start;
 }
 
 .btn-danger {
@@ -2387,7 +2388,9 @@ body {
 }
 
 .cabinet-table--data .col-actions {
-  width: 14%;
+  width: 1%;
+  min-width: 168px;
+  white-space: nowrap;
 }
 
 .cabinet-table--data .col-duration {
@@ -2516,13 +2519,33 @@ body {
 }
 
 .cabinet-table--data td {
-  vertical-align: top;
+  vertical-align: middle;
+}
+
+.cabinet-table--data .col-title,
+.cabinet-table--data .col-folder {
   word-wrap: break-word;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+}
+
+.cabinet-table--data td.col-actions {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.cabinet-table-actions .btn {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .cabinet-table--data .col-folder .inline-code {
   font-size: 0.78rem;
+  white-space: nowrap;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
 }
 
 .cabinet-footer {
