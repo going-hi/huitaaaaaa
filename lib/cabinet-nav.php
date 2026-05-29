@@ -43,3 +43,28 @@ function mb_cabinet_nav_render(string $active, string $suffix = ''): void
       </nav>
     <?php
 }
+
+/**
+ * Боковая панель каталога: меню + дерево разделов.
+ *
+ * @param list<array<string,mixed>> $tree
+ * @param 'catalog'|'learning'|'documents'|'overview'|'base'|'profile'|'settings' $active
+ */
+function mb_catalog_sidebar_render(array $tree, string $active = 'catalog', ?string $activeCategorySlug = null, string $suffix = ''): void
+{
+    require_once __DIR__ . '/knowledge.php';
+    ?>
+    <aside class="cabinet-sidebar cabinet-sidebar--catalog">
+      <div class="cabinet-sidebar-block">
+        <p class="cabinet-sidebar-title">Меню</p>
+        <?php mb_cabinet_nav_render($active, $suffix); ?>
+      </div>
+      <div class="cabinet-sidebar-block cabinet-sidebar-block--tree">
+        <p class="cabinet-sidebar-title">Разделы базы</p>
+        <div class="kb-tree-wrap">
+          <?= mb_render_category_tree($tree, 0, $activeCategorySlug) ?>
+        </div>
+      </div>
+    </aside>
+    <?php
+}

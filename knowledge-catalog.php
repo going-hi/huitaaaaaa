@@ -20,15 +20,10 @@ $workspace = mb_workspace_get();
 mb_cabinet_head('Каталог знаний');
 mb_cabinet_header_render($user, 'Поиск по каталогу...');
 ?>
-  <div class="cabinet-layout">
-    <aside class="cabinet-sidebar">
-      <div class="cabinet-sidebar-head">
-        <h2 class="cabinet-sidebar-title">Навигация</h2>
-      </div>
-      <?php mb_cabinet_nav_render('catalog'); ?>
-    </aside>
+  <div class="cabinet-layout cabinet-layout--catalog">
+    <?php mb_catalog_sidebar_render($tree, 'catalog'); ?>
 
-    <main class="cabinet-main">
+    <main class="cabinet-main cabinet-main--catalog">
       <h1 class="cabinet-page-title">Каталог знаний</h1>
       <p class="cabinet-page-lead">Единая структура материалов: <?= mb_h($workspace['title']) ?>.</p>
 
@@ -37,15 +32,19 @@ mb_cabinet_header_render($user, 'Поиск по каталогу...');
         <span class="cabinet-pill"><strong><?= (int) $stats['categories'] ?></strong> разделов</span>
         <span class="cabinet-pill"><strong><?= (int) $stats['tags'] ?></strong> тегов</span>
         <?php if ($stats['updated_today'] > 0): ?>
-        <span class="cabinet-pill cabinet-pill--accent">Обновлено сегодня · <?= (int) $stats['updated_today'] ?> <?= $stats['updated_today'] === 1 ? 'запись' : 'записей' ?></span>
+        <span class="cabinet-pill cabinet-pill--accent">Сегодня +<?= (int) $stats['updated_today'] ?></span>
         <?php endif; ?>
-        <?php if (mb_can_write()): ?>
-        <a href="article-edit.php" class="btn btn-primary btn-sm">Новая статья</a>
-        <a href="category-edit.php" class="btn btn-outline btn-sm">Новый раздел</a>
-        <?php endif; ?>
-        <a href="search.php" class="btn btn-ghost btn-sm">Поиск</a>
       </div>
 
+      <div class="cabinet-toolbar">
+        <?php if (mb_can_write()): ?>
+        <a href="article-edit.php" class="btn btn-primary">Новая статья</a>
+        <a href="category-edit.php" class="btn btn-outline">Новый раздел</a>
+        <?php endif; ?>
+        <a href="search.php" class="btn btn-ghost">Поиск по статьям</a>
+      </div>
+
+      <h2 class="cabinet-section-heading">Разделы</h2>
       <div class="cabinet-actions-grid cabinet-actions-grid--catalog">
         <?php foreach ($topCategories as $cat):
             if ($cat['slug'] === 'help') {
@@ -62,26 +61,19 @@ mb_cabinet_header_render($user, 'Поиск по каталогу...');
         <?php endforeach; ?>
       </div>
 
-      <h2 class="cabinet-section-heading">Недавно в каталоге</h2>
-      <ul class="cabinet-feed">
+      <h2 class="cabinet-section-heading">Недавние материалы</h2>
+      <ul class="cabinet-feed cabinet-feed--links">
         <?php foreach ($recent as $a): ?>
         <li class="cabinet-feed-item">
-          <a href="article.php?slug=<?= rawurlencode($a['slug']) ?>" class="cabinet-feed-title" style="text-decoration:none;color:inherit"><?= mb_h($a['title']) ?></a>
-          <span class="cabinet-feed-meta"><?= mb_h($a['category_name']) ?> · <?= mb_h($a['author_name']) ?> · <?= mb_h(mb_format_datetime($a['updated_at'])) ?></span>
+          <a href="article.php?slug=<?= rawurlencode($a['slug']) ?>" class="cabinet-feed-link">
+            <span class="cabinet-feed-title"><?= mb_h($a['title']) ?></span>
+            <span class="cabinet-feed-meta"><?= mb_h($a['category_name']) ?> · <?= mb_h($a['author_name']) ?> · <?= mb_h(mb_format_datetime($a['updated_at'])) ?></span>
+          </a>
         </li>
         <?php endforeach; ?>
       </ul>
 
-      <h2 class="cabinet-section-heading">Дерево разделов</h2>
-      <div class="cabinet-panel">
-        <p><strong><?= mb_h($workspace['title']) ?></strong></p>
-        <?= mb_render_category_tree($tree) ?>
-      </div>
-
-      <div class="cabinet-tip">
-        <strong>Поиск.</strong> Используйте строку в шапке — учитываются заголовок, описание и текст статей.
-      </div>
+      <p class="cabinet-tip cabinet-tip--mobile-tree">На телефоне откройте меню ☰ — там дерево всех разделов.</p>
     </main>
   </div>
-</body>
-</html>
+<?php mb_cabinet_foot('catalog'); ?>

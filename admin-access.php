@@ -77,5 +77,4 @@ mb_cabinet_header_render($user, 'Поиск...', false);
       <p><a href="admin-users.php" class="btn btn-ghost">К пользователям</a></p>
     </main>
   </div>
-</body>
-</html>
+<?php mb_cabinet_foot('settings'); ?>

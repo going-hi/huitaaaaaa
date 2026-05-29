@@ -6,6 +6,7 @@ require_once __DIR__ . '/lib/bootstrap.php';
 require_once __DIR__ . '/lib/security.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/knowledge.php';
+require_once __DIR__ . '/lib/roles.php';
 require_once __DIR__ . '/lib/cabinet-nav.php';
 require_once __DIR__ . '/lib/cabinet-layout.php';
 mb_require_login();
@@ -13,9 +14,7 @@ $user = mb_current_user();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['course_id'], $_POST['progress'])) {
     if (mb_csrf_validate(isset($_POST['_csrf']) ? (string) $_POST['_csrf'] : null)) {
-        $cid = (int) $_POST['course_id'];
-        $prog = (int) $_POST['progress'];
-        mb_course_update_progress($user['id'], $cid, $prog);
+        mb_course_update_progress($user['id'], (int) $_POST['course_id'], (int) $_POST['progress']);
         mb_flash_set('cabinet_notice', 'Прогресс сохранён.');
     }
     header('Location: learning-materials.php', true, 302);
@@ -25,9 +24,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['course_id'], $_POST['
 $stats = mb_learning_stats($user['id']);
 $courses = mb_courses_list($user['id']);
 $notice = mb_flash_take('cabinet_notice');
+$completed = 0;
+foreach ($courses as $c) {
+    if ((int) $c['progress_percent'] >= 100) {
+        $completed++;
+    }
+}
+
+$tracks = [
+    ['Руководитель', 'Постановка целей, теги релизов, связь статей с задачами.', 'knowledge-catalog.php'],
+    ['Разработчик', 'ADR, runbook, дежурства — в каталоге раздел «Разработка».', 'category.php?slug=dev'],
+    ['Поддержка', 'Макросы и эскалации в разделе «Поддержка».', 'category.php?slug=support'],
+    ['Новичок', 'Чек-лист онбординга для старта в команде.', 'article.php?slug=checklist-sales-onboarding'],
+];
 
 mb_cabinet_head('Обучающие материалы');
-mb_cabinet_header_render($user, 'Поиск по материалам...');
+mb_cabinet_header_render($user, 'Поиск...');
 ?>
   <div class="cabinet-layout">
     <aside class="cabinet-sidebar">
@@ -41,53 +53,73 @@ mb_cabinet_header_render($user, 'Поиск по материалам...');
       <?php if ($notice !== null): ?>
       <p class="auth-alert auth-alert--success"><?= mb_h($notice) ?></p>
       <?php endif; ?>
-      <h1 class="cabinet-page-title">Обучающие материалы</h1>
-      <p class="cabinet-page-lead">Программа адаптации и повышения квалификации с фиксацией прогресса.</p>
 
-      <div class="cabinet-meta-strip" aria-label="Сводка по обучению">
-        <span class="cabinet-pill"><strong><?= (int) $stats['courses'] ?></strong> курсов</span>
-        <span class="cabinet-pill"><strong><?= (int) $stats['lessons'] ?></strong> уроков</span>
-        <span class="cabinet-pill cabinet-pill--accent">Ваш прогресс: <strong><?= (int) $stats['avg_progress'] ?>%</strong></span>
+      <div class="learn-hero">
+        <div class="learn-hero__text">
+          <h1 class="cabinet-page-title">Обучающие материалы</h1>
+          <p class="cabinet-page-lead">Курсы с фиксацией прогресса. Завершено <?= (int) $completed ?> из <?= count($courses) ?>.</p>
+        </div>
+        <div class="learn-hero__ring" aria-label="Общий прогресс <?= (int) $stats['avg_progress'] ?>%">
+          <svg viewBox="0 0 120 120" class="learn-ring">
+            <circle cx="60" cy="60" r="52" class="learn-ring__bg"></circle>
+            <circle cx="60" cy="60" r="52" class="learn-ring__fg" style="stroke-dashoffset: <?= 326.7 * (1 - $stats['avg_progress'] / 100) ?>"></circle>
+          </svg>
+          <span class="learn-ring__value"><?= (int) $stats['avg_progress'] ?>%</span>
+        </div>
       </div>
 
-      <h2 class="cabinet-section-heading">Витрина курсов</h2>
-      <div class="cabinet-course-list">
+      <div class="cabinet-meta-strip">
+        <span class="cabinet-pill"><strong><?= (int) $stats['courses'] ?></strong> курсов</span>
+        <span class="cabinet-pill"><strong><?= (int) $stats['lessons'] ?></strong> модулей</span>
+        <span class="cabinet-pill cabinet-pill--accent"><strong><?= (int) $completed ?></strong> завершено</span>
+      </div>
+
+      <h2 class="cabinet-section-heading">Ваши курсы</h2>
+      <?php if ($courses === []): ?>
+      <div class="cabinet-empty-state"><p>Курсы пока не добавлены. Запустите seed.</p></div>
+      <?php else: ?>
+      <div class="learn-grid">
         <?php foreach ($courses as $course):
             $p = (int) $course['progress_percent'];
-            $label = $p >= 100 ? 'Завершено' : ($p > 0 ? $p . '%' : 'Не начато');
+            $status = $p >= 100 ? 'done' : ($p > 0 ? 'progress' : 'new');
             ?>
-        <article class="cabinet-course-row">
-          <div class="cabinet-course-main">
+        <article class="learn-card learn-card--<?= $status ?>">
+          <div class="learn-card__head">
             <span class="cabinet-tag <?= mb_h(mb_course_type_class($course['course_type'])) ?>"><?= mb_h(mb_course_type_label($course['course_type'])) ?></span>
-            <h3 class="cabinet-course-name"><?= mb_h($course['title']) ?></h3>
-            <p class="cabinet-course-desc"><?= mb_h($course['description']) ?></p>
-            <p class="cabinet-course-author"><?= mb_h($course['author_label']) ?></p>
+            <span class="learn-card__time"><?= mb_h(mb_format_duration((int) $course['duration_minutes'])) ?></span>
           </div>
-          <div class="cabinet-course-side">
-            <span class="cabinet-course-time"><?= mb_h(mb_format_duration((int) $course['duration_minutes'])) ?></span>
-            <div class="cabinet-progress" aria-label="Прогресс <?= $p ?>%"><span style="width:<?= $p ?>%"></span></div>
-            <span class="cabinet-course-progress-label"><?= mb_h($label) ?></span>
-            <form method="post" class="cabinet-course-progress-form" style="margin-top:8px">
+          <h3 class="learn-card__title"><?= mb_h($course['title']) ?></h3>
+          <p class="learn-card__desc"><?= mb_h($course['description']) ?></p>
+          <p class="learn-card__author"><?= mb_h($course['author_label']) ?></p>
+          <div class="learn-card__progress">
+            <div class="cabinet-progress learn-card__bar" aria-hidden="true"><span style="width:<?= $p ?>%"></span></div>
+            <span class="learn-card__percent"><?= $p >= 100 ? 'Завершено' : ($p > 0 ? $p . '%' : 'Не начато') ?></span>
+          </div>
+          <div class="learn-card__actions">
+            <?php foreach ([0, 25, 50, 75, 100] as $step): ?>
+            <form method="post" class="learn-progress-form" data-course-progress>
               <input type="hidden" name="_csrf" value="<?= mb_h(mb_csrf_token()) ?>">
               <input type="hidden" name="course_id" value="<?= (int) $course['id'] ?>">
-              <input type="hidden" name="progress" value="<?= min(100, $p + 25) ?>">
-              <button type="submit" class="btn btn-ghost btn-sm"><?= $p >= 100 ? 'Пройдено' : '+25% прогресса' ?></button>
+              <input type="hidden" name="progress" value="<?= $step ?>">
+              <button type="submit" class="learn-progress-btn<?= $p === $step ? ' is-active' : '' ?>" title="<?= $step ?>%"><?= $step ?>%</button>
             </form>
+            <?php endforeach; ?>
           </div>
         </article>
         <?php endforeach; ?>
       </div>
+      <?php endif; ?>
 
       <h2 class="cabinet-section-heading">Треки по ролям</h2>
-      <div class="cabinet-panel">
-        <ol class="cabinet-learning-list">
-          <li><strong>Руководитель проекта.</strong> Постановка целей в базе, теги релизов, связывание задач со статьями.</li>
-          <li><strong>Разработчик.</strong> Шаблоны ADR, дежурства, runbook в каталоге.</li>
-          <li><strong>Поддержка L1/L2.</strong> Быстрый поиск макросов и эскалация в L3.</li>
-          <li><strong>Новичок.</strong> <a href="article.php?slug=checklist-sales-onboarding">Чек-лист онбординга</a> в каталоге.</li>
-        </ol>
+      <div class="learn-tracks">
+        <?php foreach ($tracks as [$title, $desc, $url]): ?>
+        <a href="<?= mb_h($url) ?>" class="learn-track-card">
+          <span class="learn-track-card__title"><?= mb_h($title) ?></span>
+          <span class="learn-track-card__desc"><?= mb_h($desc) ?></span>
+          <span class="learn-track-card__arrow">→</span>
+        </a>
+        <?php endforeach; ?>
       </div>
     </main>
   </div>
-</body>
-</html>
+<?php mb_cabinet_foot('learning'); ?>

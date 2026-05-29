@@ -93,5 +93,4 @@ mb_cabinet_head('Профиль');
       </div>
     </main>
   </div>
-</body>
-</html>
+<?php mb_cabinet_foot('profile'); ?>

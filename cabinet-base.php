@@ -53,5 +53,4 @@ mb_cabinet_header_render($user, 'Поиск по базе знаний...', fals
       <?php endif; ?>
     </main>
   </div>
-</body>
-</html>
+<?php mb_cabinet_foot('base'); ?>

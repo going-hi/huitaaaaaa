@@ -16,7 +16,8 @@ if ($article === null) {
     http_response_code(404);
     mb_cabinet_head('Статья не найдена');
     mb_cabinet_header_render($user, 'Поиск...');
-    echo '<main class="cabinet-main" style="max-width:900px;margin:2rem auto;padding:0 1.5rem"><h1>Статья не найдена</h1><p><a href="knowledge-catalog.php">Вернуться в каталог</a></p></main></body></html>';
+    echo '<main class="cabinet-main"><h1>Статья не найдена</h1><p><a href="knowledge-catalog.php">Вернуться в каталог</a></p></main>';
+    mb_cabinet_foot('catalog');
     exit;
 }
 
@@ -53,5 +54,4 @@ mb_cabinet_header_render($user, 'Поиск по базе...');
       </div>
     </article>
   </main>
-</body>
-</html>
+<?php mb_cabinet_foot('catalog'); ?>

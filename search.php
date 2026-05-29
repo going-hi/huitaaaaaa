@@ -65,5 +65,4 @@ mb_cabinet_header_render($user, 'Поиск по статьям...', false);
       <?php endif; ?>
     </main>
   </div>
-</body>
-</html>
+<?php mb_cabinet_foot('catalog'); ?>

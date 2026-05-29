@@ -103,5 +103,4 @@ mb_cabinet_header_render($user, 'Быстрый поиск...');
       </div>
     </main>
   </div>
-</body>
-</html>
+<?php mb_cabinet_foot('overview'); ?>

@@ -87,5 +87,4 @@ mb_cabinet_head('Настройки');
       </div>
     </main>
   </div>
-</body>
-</html>
+<?php mb_cabinet_foot('settings'); ?>

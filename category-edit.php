@@ -142,5 +142,4 @@ mb_cabinet_header_render($user, 'Поиск...');
       </div>
     </main>
   </div>
-</body>
-</html>
+<?php mb_cabinet_foot('catalog'); ?>
