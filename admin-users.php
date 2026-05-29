@@ -33,13 +33,8 @@ $groups = mb_access_groups_list();
 
 mb_cabinet_head('Пользователи');
 mb_cabinet_header_render($user, 'Поиск...', false);
+mb_cabinet_sidebar_open('settings');
 ?>
-  <div class="cabinet-layout">
-    <aside class="cabinet-sidebar">
-      <div class="cabinet-sidebar-head"><h2 class="cabinet-sidebar-title">Администрирование</h2></div>
-      <?php mb_cabinet_nav_render('settings'); ?>
-    </aside>
-    <main class="cabinet-main">
       <h1 class="cabinet-page-title">Пользователи и роли</h1>
       <p class="cabinet-page-lead">Администратор — полный доступ. Редактор — статьи и разделы. Пользователь — только чтение и скачивание.</p>
       <?php if ($error): ?><p class="auth-alert auth-alert--error"><?= mb_h($error) ?></p><?php endif; ?>
@@ -75,6 +70,7 @@ mb_cabinet_header_render($user, 'Поиск...', false);
         </form>
       </div>
       <?php endforeach; ?>
-    </main>
-  </div>
-<?php mb_cabinet_foot('settings'); ?>
+<?php
+mb_cabinet_sidebar_close();
+mb_cabinet_foot('settings');
+?>

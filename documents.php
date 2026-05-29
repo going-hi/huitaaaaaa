@@ -51,16 +51,8 @@ $isAdmin = mb_is_admin();
 
 mb_cabinet_head('Документы');
 mb_cabinet_header_render($user, 'Поиск...');
+mb_cabinet_sidebar_open('documents', '', 'cabinet-main--wide');
 ?>
-  <div class="cabinet-layout">
-    <aside class="cabinet-sidebar">
-      <div class="cabinet-sidebar-head">
-        <h2 class="cabinet-sidebar-title">Навигация</h2>
-      </div>
-      <?php mb_cabinet_nav_render('documents'); ?>
-    </aside>
-
-    <main class="cabinet-main cabinet-main--wide">
       <h1 class="cabinet-page-title">Документы</h1>
       <p class="cabinet-page-lead">Файлы хранятся на сервере в папке <code class="inline-code">storage/documents/</code> — скачивание и загрузка работают с диска.</p>
       <?php if ($success): ?><p class="auth-alert auth-alert--success"><?= mb_h($success) ?></p><?php endif; ?>
@@ -183,6 +175,7 @@ mb_cabinet_header_render($user, 'Поиск...');
         <?php endforeach; ?>
       </div>
       <?php endif; ?>
-    </main>
-  </div>
-<?php mb_cabinet_foot('documents'); ?>
+<?php
+mb_cabinet_sidebar_close();
+mb_cabinet_foot('documents');
+?>

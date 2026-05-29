@@ -436,28 +436,19 @@ function mb_render_category_tree(array $nodes, int $depth = 0, ?string $activeSl
     if ($nodes === []) {
         return '';
     }
-    $rootClass = $depth === 0 ? ' kb-tree--root' : '';
-    $html = '<ul class="kb-tree' . $rootClass . '">';
+    $html = $depth === 0 ? '<ul class="section-tree">' : '<ul class="section-tree section-tree--nested">';
     foreach ($nodes as $node) {
         if ($node['slug'] === 'help') {
             continue;
         }
-        $hasChildren = $node['children'] !== [];
         $isActive = $activeSlug !== null && $node['slug'] === $activeSlug;
-        $branchClass = $hasChildren ? ' kb-tree__item--branch is-expanded' : '';
-        $linkClass = 'kb-tree__link' . ($isActive ? ' is-active' : '');
-        $html .= '<li class="kb-tree__item' . $branchClass . '">';
+        $linkClass = 'section-tree__link' . ($isActive ? ' is-active' : '');
+        $html .= '<li class="section-tree__item">';
         $html .= '<a href="category.php?slug=' . rawurlencode($node['slug']) . '" class="' . $linkClass . '">';
-        $html .= '<span class="kb-tree__icon" aria-hidden="true">📁</span>';
-        $html .= '<span class="kb-tree__label">' . mb_h($node['name']) . '</span>';
-        if ($hasChildren) {
-            $html .= '<span class="kb-tree__chevron" aria-hidden="true"></span>';
-        }
+        $html .= mb_h($node['name']);
         $html .= '</a>';
-        if ($hasChildren) {
-            $html .= '<div class="kb-tree__children">';
+        if ($node['children'] !== []) {
             $html .= mb_render_category_tree($node['children'], $depth + 1, $activeSlug);
-            $html .= '</div>';
         }
         $html .= '</li>';
     }

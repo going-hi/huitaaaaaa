@@ -58,13 +58,8 @@ if ($prefillCategory && !$article) {
 
 mb_cabinet_head($article ? 'Редактирование' : 'Новая статья');
 mb_cabinet_header_render($user, 'Поиск...');
+mb_cabinet_sidebar_open('catalog');
 ?>
-  <div class="cabinet-layout">
-    <aside class="cabinet-sidebar">
-      <div class="cabinet-sidebar-head"><h2 class="cabinet-sidebar-title">Навигация</h2></div>
-      <?php mb_cabinet_nav_render('catalog'); ?>
-    </aside>
-    <main class="cabinet-main">
       <h1 class="cabinet-page-title"><?= $article ? 'Редактирование статьи' : 'Новая статья' ?></h1>
       <?php if ($error !== null): ?>
       <p class="auth-alert auth-alert--error"><?= mb_h($error) ?></p>
@@ -105,6 +100,7 @@ mb_cabinet_header_render($user, 'Поиск...');
           </div>
         </form>
       </div>
-    </main>
-  </div>
-<?php mb_cabinet_foot('catalog'); ?>
+<?php
+mb_cabinet_sidebar_close();
+mb_cabinet_foot('catalog');
+?>

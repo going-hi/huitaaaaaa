@@ -33,31 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 mb_cabinet_head('Профиль');
+mb_cabinet_header_render($user, 'Поиск...');
+mb_cabinet_sidebar_open('profile');
 ?>
-  <header class="cabinet-header">
-    <div class="cabinet-header-inner">
-      <a href="index.php" class="logo">
-        <img src="logo.png" alt="MindBase" class="logo-img">
-        <span>MindBase</span>
-      </a>
-      <div class="cabinet-header-spacer"></div>
-      <div class="cabinet-header-actions">
-        <span class="cabinet-user-chip"><?= mb_h($user['name']) ?></span>
-        <a href="cabinet-base.php" class="btn btn-ghost btn-sm">Моя база</a>
-        <a href="logout.php" class="btn btn-outline btn-sm">Выйти</a>
-      </div>
-    </div>
-  </header>
-
-  <div class="cabinet-layout">
-    <aside class="cabinet-sidebar">
-      <div class="cabinet-sidebar-head">
-        <h2 class="cabinet-sidebar-title">Навигация</h2>
-      </div>
-      <?php mb_cabinet_nav_render('profile'); ?>
-    </aside>
-
-    <main class="cabinet-main">
       <h1 class="cabinet-page-title">Профиль</h1>
       <p class="cabinet-page-lead">Имя и должность отображаются в статьях и ленте активности.</p>
       <?php if ($error !== null): ?>
@@ -91,6 +69,7 @@ mb_cabinet_head('Профиль');
           </div>
         </form>
       </div>
-    </main>
-  </div>
-<?php mb_cabinet_foot('profile'); ?>
+<?php
+mb_cabinet_sidebar_close();
+mb_cabinet_foot('profile');
+?>

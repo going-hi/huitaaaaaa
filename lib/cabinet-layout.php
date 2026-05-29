@@ -10,24 +10,21 @@ require_once __DIR__ . '/roles.php';
 function mb_cabinet_header_render(array $user, string $searchPlaceholder = 'Поиск...', bool $narrowSearch = true): void
 {
     $searchClass = $narrowSearch ? 'cabinet-header-search cabinet-header-search--narrow' : 'cabinet-header-search';
-    $role = mb_user_role($user);
     ?>
   <header class="cabinet-header">
     <div class="cabinet-header-inner">
-      <button type="button" class="cabinet-menu-toggle" data-cabinet-menu-toggle aria-expanded="false" aria-label="Открыть меню">
+      <button type="button" class="cabinet-menu-toggle" data-cabinet-menu-toggle aria-expanded="false" aria-label="Меню">
         <span></span><span></span><span></span>
       </button>
       <a href="index.php" class="logo">
-        <img src="logo.png" alt="MindBase" class="logo-img">
-        <span class="logo-text">MindBase</span>
+        <img src="logo.png" alt="" class="logo-img">
+        <span>MindBase</span>
       </a>
       <form class="<?= $searchClass ?>" action="search.php" method="get" role="search">
-        <input type="search" name="q" class="form-input cabinet-search-input" placeholder="<?= mb_h($searchPlaceholder) ?>" aria-label="<?= mb_h($searchPlaceholder) ?>" value="<?= mb_h(isset($_GET['q']) ? trim((string) $_GET['q']) : '') ?>">
+        <input type="search" name="q" class="form-input cabinet-search-input" placeholder="<?= mb_h($searchPlaceholder) ?>" value="<?= mb_h(isset($_GET['q']) ? trim((string) $_GET['q']) : '') ?>">
       </form>
       <div class="cabinet-header-actions">
-        <span class="<?= mb_h(mb_role_badge_class($role)) ?> cabinet-role-badge--header" title="<?= mb_h(mb_role_label($role)) ?>"><?= mb_h(mb_role_label($role)) ?></span>
-        <span class="cabinet-user-chip" title="<?= mb_h($user['email']) ?>"><?= mb_h($user['name']) ?></span>
-        <a href="cabinet.php" class="btn btn-ghost btn-sm hide-mobile">Кабинет</a>
+        <span class="cabinet-user-chip hide-mobile"><?= mb_h($user['name']) ?></span>
         <a href="logout.php" class="btn btn-outline btn-sm">Выйти</a>
       </div>
     </div>
@@ -42,20 +39,38 @@ function mb_cabinet_header_render(array $user, string $searchPlaceholder = 'По
 function mb_cabinet_bottom_nav_render(string $active): void
 {
     $items = [
-        ['catalog', 'knowledge-catalog.php', 'Каталог', '📚'],
-        ['learning', 'learning-materials.php', 'Обучение', '🎓'],
-        ['documents', 'documents.php', 'Файлы', '📄'],
-        ['overview', 'cabinet.php', 'Кабинет', '👤'],
+        ['catalog', 'knowledge-catalog.php', 'Каталог'],
+        ['learning', 'learning-materials.php', 'Обучение'],
+        ['documents', 'documents.php', 'Файлы'],
+        ['overview', 'cabinet.php', 'Кабинет'],
     ];
     ?>
-  <nav class="cabinet-bottom-nav" aria-label="Быстрая навигация">
-    <?php foreach ($items as [$key, $href, $label, $icon]): ?>
-    <a href="<?= mb_h($href) ?>" class="cabinet-bottom-nav__item<?= $active === $key ? ' is-active' : '' ?>">
-      <span class="cabinet-bottom-nav__icon" aria-hidden="true"><?= $icon ?></span>
-      <span class="cabinet-bottom-nav__label"><?= mb_h($label) ?></span>
-    </a>
+  <nav class="cabinet-bottom-nav" aria-label="Навигация">
+    <?php foreach ($items as [$key, $href, $label]): ?>
+    <a href="<?= mb_h($href) ?>" class="cabinet-bottom-nav__item<?= $active === $key ? ' is-active' : '' ?>"><?= mb_h($label) ?></a>
     <?php endforeach; ?>
   </nav>
+    <?php
+}
+
+function mb_cabinet_sidebar_open(string $active, string $suffix = '', string $mainClass = ''): void
+{
+    require_once __DIR__ . '/cabinet-nav.php';
+    $mainAttr = $mainClass !== '' ? ' class="cabinet-main ' . mb_h($mainClass) . '"' : ' class="cabinet-main"';
+    ?>
+  <div class="cabinet-layout">
+    <aside class="cabinet-sidebar">
+      <?php mb_cabinet_nav_render($active, $suffix); ?>
+    </aside>
+    <main<?= $mainAttr ?>>
+    <?php
+}
+
+function mb_cabinet_sidebar_close(): void
+{
+    ?>
+    </main>
+  </div>
     <?php
 }
 

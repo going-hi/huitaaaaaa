@@ -29,31 +29,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['workspace_title'])) {
 }
 
 mb_cabinet_head('Настройки');
+mb_cabinet_header_render($user, 'Поиск...');
+mb_cabinet_sidebar_open('settings');
 ?>
-  <header class="cabinet-header">
-    <div class="cabinet-header-inner">
-      <a href="index.php" class="logo">
-        <img src="logo.png" alt="MindBase" class="logo-img">
-        <span>MindBase</span>
-      </a>
-      <div class="cabinet-header-spacer"></div>
-      <div class="cabinet-header-actions">
-        <span class="cabinet-user-chip"><?= mb_h($user['name']) ?></span>
-        <a href="cabinet-base.php" class="btn btn-ghost btn-sm">Моя база</a>
-        <a href="logout.php" class="btn btn-outline btn-sm">Выйти</a>
-      </div>
-    </div>
-  </header>
-
-  <div class="cabinet-layout">
-    <aside class="cabinet-sidebar">
-      <div class="cabinet-sidebar-head">
-        <h2 class="cabinet-sidebar-title">Навигация</h2>
-      </div>
-      <?php mb_cabinet_nav_render('settings'); ?>
-    </aside>
-
-    <main class="cabinet-main">
       <h1 class="cabinet-page-title">Настройки</h1>
       <p class="cabinet-page-lead">Экспорт контента и название рабочего пространства.</p>
       <?php if ($error !== null): ?>
@@ -85,6 +63,7 @@ mb_cabinet_head('Настройки');
           </div>
         </form>
       </div>
-    </main>
-  </div>
-<?php mb_cabinet_foot('settings'); ?>
+<?php
+mb_cabinet_sidebar_close();
+mb_cabinet_foot('settings');
+?>

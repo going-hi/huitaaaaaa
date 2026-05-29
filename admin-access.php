@@ -39,13 +39,8 @@ foreach ($groups as $g) {
 
 mb_cabinet_head('Группы доступа');
 mb_cabinet_header_render($user, 'Поиск...', false);
+mb_cabinet_sidebar_open('settings');
 ?>
-  <div class="cabinet-layout">
-    <aside class="cabinet-sidebar">
-      <div class="cabinet-sidebar-head"><h2 class="cabinet-sidebar-title">Администрирование</h2></div>
-      <?php mb_cabinet_nav_render('settings'); ?>
-    </aside>
-    <main class="cabinet-main">
       <h1 class="cabinet-page-title">Группы доступа</h1>
       <p class="cabinet-page-lead">Привязывайте группы к разделам в форме редактирования раздела. Пользователь видит материалы только своих групп.</p>
       <?php if ($error): ?><p class="auth-alert auth-alert--error"><?= mb_h($error) ?></p><?php endif; ?>
@@ -75,6 +70,7 @@ mb_cabinet_header_render($user, 'Поиск...', false);
         <?php endforeach; ?>
       </ul>
       <p><a href="admin-users.php" class="btn btn-ghost">К пользователям</a></p>
-    </main>
-  </div>
-<?php mb_cabinet_foot('settings'); ?>
+<?php
+mb_cabinet_sidebar_close();
+mb_cabinet_foot('settings');
+?>

@@ -24,16 +24,8 @@ foreach ($helpArticles as $h) {
 
 mb_cabinet_head('Моя база знаний');
 mb_cabinet_header_render($user, 'Поиск по базе знаний...', false);
+mb_cabinet_sidebar_open('base', $navHtml);
 ?>
-  <div class="cabinet-layout">
-    <aside class="cabinet-sidebar">
-      <div class="cabinet-sidebar-head">
-        <h2 class="cabinet-sidebar-title">Навигация</h2>
-      </div>
-      <?php mb_cabinet_nav_render('base', $navHtml); ?>
-    </aside>
-
-    <main class="cabinet-main">
       <?php foreach ($helpArticles as $h):
           $full = mb_article_by_slug($h['slug']);
           if ($full === null) {
@@ -51,6 +43,7 @@ mb_cabinet_header_render($user, 'Поиск по базе знаний...', fals
       <?php if ($helpArticles === []): ?>
       <p class="cabinet-muted-text">Справка не загружена. Запустите <code>php database/seed.php</code>.</p>
       <?php endif; ?>
-    </main>
-  </div>
-<?php mb_cabinet_foot('base'); ?>
+<?php
+mb_cabinet_sidebar_close();
+mb_cabinet_foot('base');
+?>

@@ -18,13 +18,8 @@ $categories = mb_categories_list(null);
 
 mb_cabinet_head('Поиск по статьям');
 mb_cabinet_header_render($user, 'Поиск по статьям...', false);
+mb_cabinet_sidebar_open('catalog');
 ?>
-  <div class="cabinet-layout">
-    <aside class="cabinet-sidebar">
-      <div class="cabinet-sidebar-head"><h2 class="cabinet-sidebar-title">Навигация</h2></div>
-      <?php mb_cabinet_nav_render('catalog'); ?>
-    </aside>
-    <main class="cabinet-main">
       <h1 class="cabinet-page-title">Поиск по статьям</h1>
       <div class="cabinet-panel cabinet-search-panel">
         <form class="cabinet-search-form" method="get" action="search.php" role="search">
@@ -63,6 +58,7 @@ mb_cabinet_header_render($user, 'Поиск по статьям...', false);
       </ul>
       <?php endif; ?>
       <?php endif; ?>
-    </main>
-  </div>
-<?php mb_cabinet_foot('catalog'); ?>
+<?php
+mb_cabinet_sidebar_close();
+mb_cabinet_foot('catalog');
+?>

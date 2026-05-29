@@ -16,16 +16,8 @@ $feed = mb_activity_feed(4);
 
 mb_cabinet_head('Личный кабинет');
 mb_cabinet_header_render($user, 'Быстрый поиск...');
+mb_cabinet_sidebar_open('overview');
 ?>
-  <div class="cabinet-layout">
-    <aside class="cabinet-sidebar">
-      <div class="cabinet-sidebar-head">
-        <h2 class="cabinet-sidebar-title">Навигация</h2>
-      </div>
-      <?php mb_cabinet_nav_render('overview'); ?>
-    </aside>
-
-    <main class="cabinet-main">
       <?php if ($cabinetNotice !== null): ?>
       <p class="auth-alert auth-alert--success cabinet-notice" role="status"><?= mb_h($cabinetNotice) ?></p>
       <?php endif; ?>
@@ -101,6 +93,7 @@ mb_cabinet_header_render($user, 'Быстрый поиск...');
           <strong>Совет.</strong> В строке поиска вверху можно искать сразу по всей базе. Для узких тем откройте <a href="knowledge-catalog.php">каталог знаний</a>.
         </div>
       </div>
-    </main>
-  </div>
-<?php mb_cabinet_foot('overview'); ?>
+<?php
+mb_cabinet_sidebar_close();
+mb_cabinet_foot('overview');
+?>
