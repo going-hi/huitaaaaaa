@@ -444,8 +444,10 @@ function mb_render_category_tree(array $nodes, int $depth = 0, ?string $activeSl
         $isActive = $activeSlug !== null && $node['slug'] === $activeSlug;
         $linkClass = 'section-tree__link' . ($isActive ? ' is-active' : '');
         $html .= '<li class="section-tree__item">';
+        $count = mb_category_article_count_recursive((int) $node['id']);
         $html .= '<a href="category.php?slug=' . rawurlencode($node['slug']) . '" class="' . $linkClass . '">';
-        $html .= mb_h($node['name']);
+        $html .= '<span class="section-tree__label">' . mb_h($node['name']) . '</span>';
+        $html .= '<span class="section-tree__count">' . (int) $count . '</span>';
         $html .= '</a>';
         if ($node['children'] !== []) {
             $html .= mb_render_category_tree($node['children'], $depth + 1, $activeSlug);

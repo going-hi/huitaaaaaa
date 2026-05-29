@@ -49,24 +49,41 @@ mb_cabinet_sidebar_open('catalog');
         <?php endforeach; ?>
       </div>
 
-      <div class="cabinet-split">
-        <section>
-          <h2 class="cabinet-section-heading">Недавние материалы</h2>
-          <ul class="cabinet-feed cabinet-feed--links">
-            <?php foreach ($recent as $a): ?>
-            <li class="cabinet-feed-item">
-              <a href="article.php?slug=<?= rawurlencode($a['slug']) ?>" class="cabinet-feed-link">
-                <span class="cabinet-feed-title"><?= mb_h($a['title']) ?></span>
-                <span class="cabinet-feed-meta"><?= mb_h($a['category_name']) ?> · <?= mb_h(mb_format_datetime($a['updated_at'])) ?></span>
-              </a>
-            </li>
-            <?php endforeach; ?>
-          </ul>
-        </section>
-        <section class="cabinet-panel cabinet-panel--tree">
-          <h2 class="cabinet-section-heading cabinet-section-heading--in-panel">Дерево разделов</h2>
-          <?= mb_render_category_tree($tree) ?>
-        </section>
+      <h2 class="cabinet-section-heading">Недавние материалы</h2>
+      <div class="cabinet-panel cabinet-panel--table cabinet-panel--wide">
+        <div class="cabinet-table-wrap">
+          <table class="cabinet-table cabinet-table--data">
+            <thead>
+              <tr>
+                <th class="col-title">Название</th>
+                <th class="col-author">Раздел</th>
+                <th class="col-date">Обновлено</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($recent as $a): ?>
+              <tr>
+                <td class="col-title" data-label="Название">
+                  <a href="article.php?slug=<?= rawurlencode($a['slug']) ?>" class="cabinet-table-link"><?= mb_h($a['title']) ?></a>
+                </td>
+                <td class="col-author" data-label="Раздел">
+                  <?php if (!empty($a['category_slug'])): ?>
+                  <a href="category.php?slug=<?= rawurlencode($a['category_slug']) ?>" class="cabinet-table-link cabinet-table-link--muted"><?= mb_h($a['category_name']) ?></a>
+                  <?php else: ?>
+                  <?= mb_h($a['category_name']) ?>
+                  <?php endif; ?>
+                </td>
+                <td class="col-date" data-label="Обновлено"><?= mb_h(mb_format_datetime($a['updated_at'])) ?></td>
+              </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <h2 class="cabinet-section-heading">Дерево разделов</h2>
+      <div class="cabinet-panel cabinet-panel--tree-nav cabinet-panel--wide">
+        <?= mb_render_category_tree($tree) ?>
       </div>
 <?php
 mb_cabinet_sidebar_close();

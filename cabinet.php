@@ -49,7 +49,7 @@ mb_cabinet_sidebar_open('overview');
         <ul class="cabinet-feed cabinet-feed--compact">
           <?php foreach ($feed as $item): ?>
           <li class="cabinet-feed-item">
-            <a href="<?= mb_h($item['url']) ?>" class="cabinet-feed-title" style="text-decoration:none;color:inherit"><?= mb_h($item['title']) ?></a>
+            <a href="<?= mb_h($item['url']) ?>" class="cabinet-table-link"><?= mb_h($item['title']) ?></a>
             <span class="cabinet-feed-meta"><?= mb_h($item['meta']) ?></span>
           </li>
           <?php endforeach; ?>

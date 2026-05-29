@@ -20,6 +20,9 @@ if ($category === null) {
 $articles = mb_articles_by_category((int) $category['id']);
 $count = mb_category_article_count_recursive((int) $category['id']);
 $children = mb_categories_list((int) $category['id']);
+foreach ($children as $i => $ch) {
+    $children[$i]['article_count'] = mb_category_article_count_recursive((int) $ch['id']);
+}
 
 mb_cabinet_head($category['name']);
 mb_cabinet_header_render($user, 'Поиск...');

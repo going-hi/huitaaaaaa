@@ -45,20 +45,16 @@ function mb_cabinet_footer_render(string $active): void
         ['overview', 'cabinet.php', 'Кабинет'],
     ];
     ?>
-  <footer class="cabinet-footer">
-    <div class="cabinet-footer-inner">
+  <footer class="cabinet-footer" role="contentinfo">
+    <div class="cabinet-footer-bar">
+      <a href="index.php" class="cabinet-footer-brand">MindBase</a>
       <nav class="cabinet-footer-nav" aria-label="Быстрая навигация">
         <?php foreach ($items as [$key, $href, $label]): ?>
         <a href="<?= mb_h($href) ?>" class="cabinet-footer-link<?= $active === $key ? ' is-active' : '' ?>"><?= mb_h($label) ?></a>
         <?php endforeach; ?>
+        <a href="cabinet-settings.php" class="cabinet-footer-link">Настройки</a>
+        <a href="logout.php" class="cabinet-footer-link">Выйти</a>
       </nav>
-      <p class="cabinet-footer-meta">
-        <span>MindBase</span>
-        <span class="cabinet-footer-sep">·</span>
-        <a href="cabinet-settings.php" class="cabinet-footer-link cabinet-footer-link--muted">Настройки</a>
-        <span class="cabinet-footer-sep">·</span>
-        <a href="logout.php" class="cabinet-footer-link cabinet-footer-link--muted">Выйти</a>
-      </p>
     </div>
     <nav class="cabinet-bottom-nav" aria-label="Навигация (мобильная)">
       <?php foreach ($items as [$key, $href, $label]): ?>
@@ -72,13 +68,19 @@ function mb_cabinet_footer_render(string $active): void
 function mb_cabinet_sidebar_open(string $active, string $suffix = '', string $mainClass = ''): void
 {
     require_once __DIR__ . '/cabinet-nav.php';
-    $mainAttr = $mainClass !== '' ? ' class="cabinet-main ' . mb_h($mainClass) . '"' : ' class="cabinet-main"';
+    if ($mainClass === 'cabinet-main--article') {
+        $classes = 'cabinet-main cabinet-main--article';
+    } elseif ($mainClass !== '') {
+        $classes = 'cabinet-main cabinet-main--fluid ' . $mainClass;
+    } else {
+        $classes = 'cabinet-main cabinet-main--fluid';
+    }
     ?>
-  <div class="cabinet-layout">
+  <div class="cabinet-layout cabinet-layout--fluid">
     <aside class="cabinet-sidebar">
       <?php mb_cabinet_nav_render($active, $suffix); ?>
     </aside>
-    <main<?= $mainAttr ?>>
+    <main class="<?= mb_h($classes) ?>">
     <?php
 }
 
@@ -102,7 +104,7 @@ function mb_cabinet_head(string $title): void
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=<?= (int) @filemtime(__DIR__ . '/../styles.css') ?>">
 </head>
 <body class="cabinet-page">
   <div class="noise"></div>
