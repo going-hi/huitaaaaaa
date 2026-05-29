@@ -18,10 +18,10 @@ $categories = mb_categories_list(null);
 
 mb_cabinet_head('Поиск по статьям');
 mb_cabinet_header_render($user, 'Поиск по статьям...', false);
-mb_cabinet_sidebar_open('catalog');
+mb_cabinet_sidebar_open('catalog', '', 'cabinet-main--wide');
 ?>
       <h1 class="cabinet-page-title">Поиск по статьям</h1>
-      <div class="cabinet-panel cabinet-search-panel">
+      <div class="cabinet-panel cabinet-panel--wide cabinet-search-panel">
         <form class="cabinet-search-form" method="get" action="search.php" role="search">
           <div class="cabinet-search-form-row">
             <input type="search" name="q" class="form-input cabinet-search-form-input" placeholder="Заголовок, описание или текст..." value="<?= mb_h($q) ?>" autofocus>
@@ -48,7 +48,7 @@ mb_cabinet_sidebar_open('catalog');
       <ul class="cabinet-search-results">
         <?php foreach ($results as $a): ?>
         <li class="cabinet-search-result">
-          <a href="article.php?slug=<?= rawurlencode($a['slug']) ?>" class="cabinet-search-result-title"><?= mb_search_highlight($a['title'], $q) ?></a>
+          <a href="article.php?slug=<?= rawurlencode($a['slug']) ?>" class="cabinet-search-result-title cabinet-table-link"><?= mb_search_highlight($a['title'], $q) ?></a>
           <span class="cabinet-search-result-meta"><?= mb_h($a['category_name']) ?> · <?= mb_h(mb_format_datetime($a['updated_at'])) ?></span>
           <?php if (!empty($a['snippet'])): ?>
           <p class="cabinet-search-result-snippet"><?= mb_search_highlight($a['snippet'], $q) ?></p>

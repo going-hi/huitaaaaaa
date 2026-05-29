@@ -27,7 +27,7 @@
     });
   }
 
-  document.querySelectorAll('.cabinet-sidebar a').forEach(function (link) {
+  document.querySelectorAll('.cabinet-sidebar a, .cabinet-bottom-nav a').forEach(function (link) {
     link.addEventListener('click', function () {
       if (window.matchMedia('(max-width: 900px)').matches) {
         setOpen(false);

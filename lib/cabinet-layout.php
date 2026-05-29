@@ -36,7 +36,7 @@ function mb_cabinet_header_render(array $user, string $searchPlaceholder = 'По
 /**
  * @param 'catalog'|'learning'|'documents'|'overview'|'base'|'profile'|'settings' $active
  */
-function mb_cabinet_bottom_nav_render(string $active): void
+function mb_cabinet_footer_render(string $active): void
 {
     $items = [
         ['catalog', 'knowledge-catalog.php', 'Каталог'],
@@ -45,11 +45,27 @@ function mb_cabinet_bottom_nav_render(string $active): void
         ['overview', 'cabinet.php', 'Кабинет'],
     ];
     ?>
-  <nav class="cabinet-bottom-nav" aria-label="Навигация">
-    <?php foreach ($items as [$key, $href, $label]): ?>
-    <a href="<?= mb_h($href) ?>" class="cabinet-bottom-nav__item<?= $active === $key ? ' is-active' : '' ?>"><?= mb_h($label) ?></a>
-    <?php endforeach; ?>
-  </nav>
+  <footer class="cabinet-footer">
+    <div class="cabinet-footer-inner">
+      <nav class="cabinet-footer-nav" aria-label="Быстрая навигация">
+        <?php foreach ($items as [$key, $href, $label]): ?>
+        <a href="<?= mb_h($href) ?>" class="cabinet-footer-link<?= $active === $key ? ' is-active' : '' ?>"><?= mb_h($label) ?></a>
+        <?php endforeach; ?>
+      </nav>
+      <p class="cabinet-footer-meta">
+        <span>MindBase</span>
+        <span class="cabinet-footer-sep">·</span>
+        <a href="cabinet-settings.php" class="cabinet-footer-link cabinet-footer-link--muted">Настройки</a>
+        <span class="cabinet-footer-sep">·</span>
+        <a href="logout.php" class="cabinet-footer-link cabinet-footer-link--muted">Выйти</a>
+      </p>
+    </div>
+    <nav class="cabinet-bottom-nav" aria-label="Навигация (мобильная)">
+      <?php foreach ($items as [$key, $href, $label]): ?>
+      <a href="<?= mb_h($href) ?>" class="cabinet-bottom-nav__item<?= $active === $key ? ' is-active' : '' ?>"><?= mb_h($label) ?></a>
+      <?php endforeach; ?>
+    </nav>
+  </footer>
     <?php
 }
 
@@ -96,7 +112,7 @@ function mb_cabinet_head(string $title): void
 /** @param 'catalog'|'learning'|'documents'|'overview'|'base'|'profile'|'settings' $activeNav */
 function mb_cabinet_foot(string $activeNav = 'overview'): void
 {
-    mb_cabinet_bottom_nav_render($activeNav);
+    mb_cabinet_footer_render($activeNav);
     ?>
   <script src="cabinet.js" defer></script>
 </body>

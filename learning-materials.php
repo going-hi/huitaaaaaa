@@ -10,8 +10,16 @@ require_once __DIR__ . '/lib/cabinet-layout.php';
 mb_require_login();
 $user = mb_current_user();
 
-$stats = mb_learning_stats($user['id']);
 $courses = mb_courses_list($user['id']);
+$stats = mb_learning_stats($user['id']);
+if ($courses !== []) {
+    $sumProgress = 0;
+    foreach ($courses as $c) {
+        $sumProgress += (int) $c['progress_percent'];
+    }
+    $stats['avg_progress'] = (int) round($sumProgress / count($courses));
+    $stats['courses'] = count($courses);
+}
 $notice = mb_flash_take('cabinet_notice');
 
 mb_cabinet_head('Обучение');

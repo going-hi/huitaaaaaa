@@ -1385,9 +1385,18 @@ function mb_learning_stats(int $userId): array
         $courses = (int) ($r->fetch_assoc()['c'] ?? 0);
         $r->free();
     }
-    $lessons = $courses;
+    $lessons = 0;
+    $r2 = $db->query('SELECT COUNT(*) AS c FROM course_lessons');
+    if ($r2 instanceof mysqli_result) {
+        $lessons = (int) ($r2->fetch_assoc()['c'] ?? 0);
+        $r2->free();
+    }
     $avg = 0;
-    $stmt = $db->prepare('SELECT COALESCE(AVG(progress_percent), 0) AS a FROM course_progress WHERE user_id = ?');
+    $stmt = $db->prepare(
+        'SELECT COALESCE(AVG(COALESCE(p.progress_percent, 0)), 0) AS a
+        FROM courses c
+        LEFT JOIN course_progress p ON p.course_id = c.id AND p.user_id = ?'
+    );
     if ($stmt !== false) {
         $stmt->bind_param('i', $userId);
         $stmt->execute();
