@@ -9,10 +9,20 @@ function mb_storage_documents_dir(): string
 {
     $dir = MB_ROOT . '/storage/documents';
     if (!is_dir($dir)) {
-        mkdir($dir, 0755, true);
+        mkdir($dir, 0775, true);
+    }
+    if (!is_writable($dir)) {
+        @chmod($dir, 0775);
     }
 
     return $dir;
+}
+
+function mb_storage_documents_writable(): bool
+{
+    $dir = mb_storage_documents_dir();
+
+    return is_dir($dir) && is_writable($dir);
 }
 
 function mb_slugify(string $text): string
@@ -980,10 +990,16 @@ function mb_document_upload(int $userId, array $file, string $title, string $own
         'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'csv' => 'text/csv',
     ];
+    if (!mb_storage_documents_writable()) {
+        return [
+            'error' => 'Нет прав на запись в storage/documents. '
+                . 'В Docker: docker compose exec php chown -R www-data:www-data /var/www/html/storage',
+        ];
+    }
     $stored = bin2hex(random_bytes(16)) . '.' . $ext;
     $dest = mb_storage_documents_dir() . '/' . $stored;
     if (!move_uploaded_file((string) $file['tmp_name'], $dest)) {
-        return ['error' => 'Не удалось сохранить файл.'];
+        return ['error' => 'Не удалось сохранить файл. Проверьте права на каталог storage/documents.'];
     }
     $db = mb_db();
     $size = (int) filesize($dest);

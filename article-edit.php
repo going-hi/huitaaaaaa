@@ -52,27 +52,32 @@ foreach (mb_categories_list(null) as $top) {
         $allCategories[] = $sub;
     }
 }
-if ($prefillCategory && !$article) {
+if ($prefillCategory && $article === null) {
     $article = ['category_id' => $prefillCategory];
 }
 
-mb_cabinet_head($article ? 'Редактирование' : 'Новая статья');
+$isEdit = is_array($article) && isset($article['id']) && (int) $article['id'] > 0;
+$articleId = $isEdit ? (int) $article['id'] : 0;
+$articleSlug = $isEdit ? (string) ($article['slug'] ?? '') : '';
+$selectedCategoryId = (int) ($article['category_id'] ?? $prefillCategory ?? 0);
+
+mb_cabinet_head($isEdit ? 'Редактирование' : 'Новая статья');
 mb_cabinet_header_render($user, 'Поиск...');
 mb_cabinet_sidebar_open('catalog');
 ?>
-      <h1 class="cabinet-page-title"><?= $article ? 'Редактирование статьи' : 'Новая статья' ?></h1>
+      <h1 class="cabinet-page-title"><?= $isEdit ? 'Редактирование статьи' : 'Новая статья' ?></h1>
       <?php if ($error !== null): ?>
       <p class="auth-alert auth-alert--error"><?= mb_h($error) ?></p>
       <?php endif; ?>
       <div class="cabinet-panel">
-        <form class="cabinet-form" method="post" action="article-edit.php<?= $article ? '?id=' . (int) $article['id'] : '' ?>">
+        <form class="cabinet-form" method="post" action="article-edit.php<?= $isEdit ? '?id=' . $articleId : '' ?>">
           <input type="hidden" name="_csrf" value="<?= mb_h(mb_csrf_token()) ?>">
-          <?php if ($article): ?><input type="hidden" name="id" value="<?= (int) $article['id'] ?>"><?php endif; ?>
+          <?php if ($isEdit): ?><input type="hidden" name="id" value="<?= $articleId ?>"><?php endif; ?>
           <label class="form-label">
             <span>Раздел</span>
             <select name="category_id" class="form-input" required>
               <?php foreach ($allCategories as $c): ?>
-              <option value="<?= (int) $c['id'] ?>" <?= ($article && isset($article['category_id']) && (int) $article['category_id'] === (int) $c['id']) ? 'selected' : '' ?>>
+              <option value="<?= (int) $c['id'] ?>" <?= $selectedCategoryId === (int) $c['id'] ? 'selected' : '' ?>>
                 <?= $c['parent_id'] ? '— ' : '' ?><?= mb_h($c['name']) ?>
               </option>
               <?php endforeach; ?>
@@ -96,7 +101,7 @@ mb_cabinet_sidebar_open('catalog');
           </label>
           <div class="cabinet-form-actions">
             <button type="submit" class="btn btn-primary">Сохранить</button>
-            <a href="<?= $article ? 'article.php?slug=' . rawurlencode($article['slug']) : 'knowledge-catalog.php' ?>" class="btn btn-ghost">Отмена</a>
+            <a href="<?= ($isEdit && $articleSlug !== '') ? 'article.php?slug=' . rawurlencode($articleSlug) : 'knowledge-catalog.php' ?>" class="btn btn-ghost">Отмена</a>
           </div>
         </form>
       </div>
