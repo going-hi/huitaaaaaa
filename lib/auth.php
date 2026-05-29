@@ -191,6 +191,11 @@ function mb_current_request_allowed_page(): ?string
         'knowledge-catalog.php',
         'learning-materials.php',
         'documents.php',
+        'article.php',
+        'article-edit.php',
+        'search.php',
+        'category.php',
+        'export.php',
     ];
 
     return in_array($base, $allow, true) ? $base : null;
