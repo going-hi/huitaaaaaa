@@ -1254,6 +1254,127 @@ function mb_course_update_progress(int $userId, int $courseId, int $percent): ?s
     return $ok ? null : 'Ошибка сохранения прогресса.';
 }
 
+/** @return array<string,mixed>|null */
+function mb_course_by_id(int $courseId, int $userId): ?array
+{
+    $db = mb_db();
+    $stmt = $db->prepare(
+        'SELECT c.id, c.title, c.description, c.course_type, c.duration_minutes, c.author_label,
+        COALESCE(p.progress_percent, 0) AS progress_percent
+        FROM courses c
+        LEFT JOIN course_progress p ON p.course_id = c.id AND p.user_id = ?
+        WHERE c.id = ? LIMIT 1'
+    );
+    if ($stmt === false) {
+        return null;
+    }
+    $stmt->bind_param('ii', $userId, $courseId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if ($row === null) {
+        return null;
+    }
+
+    return [
+        'id' => (int) $row['id'],
+        'title' => (string) $row['title'],
+        'description' => (string) $row['description'],
+        'course_type' => (string) $row['course_type'],
+        'duration_minutes' => (int) $row['duration_minutes'],
+        'author_label' => (string) $row['author_label'],
+        'progress_percent' => (int) $row['progress_percent'],
+    ];
+}
+
+/** @return list<array<string,mixed>> */
+function mb_course_lessons_list(int $courseId, int $userId): array
+{
+    $db = mb_db();
+    $stmt = $db->prepare(
+        'SELECT l.id, l.title, l.description, l.article_slug, l.duration_minutes, l.sort_order,
+        (clp.lesson_id IS NOT NULL) AS is_completed
+        FROM course_lessons l
+        LEFT JOIN course_lesson_progress clp ON clp.lesson_id = l.id AND clp.user_id = ?
+        WHERE l.course_id = ?
+        ORDER BY l.sort_order, l.id'
+    );
+    if ($stmt === false) {
+        return [];
+    }
+    $stmt->bind_param('ii', $userId, $courseId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $rows = [];
+    while ($row = $res->fetch_assoc()) {
+        $rows[] = [
+            'id' => (int) $row['id'],
+            'title' => (string) $row['title'],
+            'description' => (string) $row['description'],
+            'article_slug' => $row['article_slug'] !== null ? (string) $row['article_slug'] : null,
+            'duration_minutes' => (int) $row['duration_minutes'],
+            'is_completed' => (bool) $row['is_completed'],
+        ];
+    }
+    $stmt->close();
+
+    return $rows;
+}
+
+function mb_course_lesson_complete(int $userId, int $lessonId): ?string
+{
+    $db = mb_db();
+    $stmt = $db->prepare('SELECT course_id FROM course_lessons WHERE id = ? LIMIT 1');
+    if ($stmt === false) {
+        return 'Урок не найден.';
+    }
+    $stmt->bind_param('i', $lessonId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if ($row === null) {
+        return 'Урок не найден.';
+    }
+    $courseId = (int) $row['course_id'];
+
+    $stmt = $db->prepare(
+        'INSERT IGNORE INTO course_lesson_progress (user_id, lesson_id) VALUES (?, ?)'
+    );
+    if ($stmt === false) {
+        return 'Ошибка сохранения.';
+    }
+    $stmt->bind_param('ii', $userId, $lessonId);
+    $stmt->execute();
+    $stmt->close();
+
+    mb_course_sync_progress_from_lessons($userId, $courseId);
+
+    return null;
+}
+
+function mb_course_sync_progress_from_lessons(int $userId, int $courseId): void
+{
+    $db = mb_db();
+    $stmt = $db->prepare(
+        'SELECT COUNT(*) AS total,
+        (SELECT COUNT(*) FROM course_lesson_progress clp
+         INNER JOIN course_lessons l ON l.id = clp.lesson_id
+         WHERE l.course_id = ? AND clp.user_id = ?) AS done
+        FROM course_lessons WHERE course_id = ?'
+    );
+    if ($stmt === false) {
+        return;
+    }
+    $stmt->bind_param('iii', $courseId, $userId, $courseId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $total = (int) ($row['total'] ?? 0);
+    $done = (int) ($row['done'] ?? 0);
+    $percent = $total > 0 ? (int) round($done / $total * 100) : 0;
+    mb_course_update_progress($userId, $courseId, $percent);
+}
+
 /** @return array{courses:int,lessons:int,avg_progress:int} */
 function mb_learning_stats(int $userId): array
 {

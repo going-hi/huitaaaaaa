@@ -95,37 +95,9 @@ mb_cabinet_sidebar_open('documents', '', 'cabinet-main--wide');
 
       <h2 class="cabinet-section-heading">Реестр файлов</h2>
 
-      <div class="doc-cards" aria-label="Список документов (мобильный)">
-        <?php foreach ($docs as $d): ?>
-        <article class="doc-card">
-          <div class="doc-card__main">
-            <h3 class="doc-card__title"><?= mb_h($d['title']) ?></h3>
-            <p class="doc-card__meta">
-              <span class="doc-card__type"><?= mb_h($d['file_type']) ?></span>
-              · <?= mb_h(mb_format_bytes((int) $d['size_bytes'])) ?>
-              · <?= mb_h($d['owner_label']) ?>
-            </p>
-            <p class="doc-card__date"><?= mb_h(mb_format_date_short($d['updated_at'])) ?> · <?= mb_h($d['folder_path']) ?></p>
-          </div>
-          <div class="doc-card__actions">
-            <?php if (!empty($d['has_file'])): ?>
-            <a href="document-download.php?id=<?= (int) $d['id'] ?>" class="btn btn-primary btn-sm">Скачать</a>
-            <?php endif; ?>
-            <?php if ($canWrite): ?>
-            <form method="post" onsubmit="return confirm('Удалить?');">
-              <input type="hidden" name="_csrf" value="<?= mb_h(mb_csrf_token()) ?>">
-              <input type="hidden" name="delete_doc_id" value="<?= (int) $d['id'] ?>">
-              <button type="submit" class="btn btn-ghost btn-sm">Удалить</button>
-            </form>
-            <?php endif; ?>
-          </div>
-        </article>
-        <?php endforeach; ?>
-      </div>
-
-      <div class="cabinet-panel cabinet-panel--table cabinet-panel--wide doc-table-panel">
+      <div class="cabinet-panel cabinet-panel--table cabinet-panel--wide">
         <div class="cabinet-table-wrap">
-          <table class="cabinet-table cabinet-table--docs cabinet-table--actions">
+          <table class="cabinet-table cabinet-table--data cabinet-table--docs cabinet-table--stack">
             <thead>
               <tr>
                 <th class="col-title">Название</th>
@@ -140,7 +112,7 @@ mb_cabinet_sidebar_open('documents', '', 'cabinet-main--wide');
             <tbody>
               <?php foreach ($docs as $d): ?>
               <tr>
-                <td class="col-title" data-label="Название"><?= mb_h($d['title']) ?></td>
+                <td class="col-title" data-label="Название"><span class="cabinet-table-title"><?= mb_h($d['title']) ?></span></td>
                 <td class="col-type" data-label="Тип"><span class="doc-type-badge"><?= mb_h($d['file_type']) ?></span></td>
                 <td class="col-size" data-label="Размер"><?= mb_h(mb_format_bytes((int) $d['size_bytes'])) ?></td>
                 <td class="col-owner" data-label="Ответственный"><?= mb_h($d['owner_label']) ?></td>

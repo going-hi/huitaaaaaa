@@ -362,19 +362,94 @@ foreach ($courses as $c) {
 }
 $stmtCourse->close();
 
-$demoId = $userIds['demo@mindbase.local'] ?? $adminId;
-$progress = [100, 75, 40, 0, 0];
-$stmtProg = $link->prepare('INSERT INTO course_progress (user_id, course_id, progress_percent) VALUES (?, ?, ?)
-    ON DUPLICATE KEY UPDATE progress_percent = VALUES(progress_percent)');
-foreach ($courseIds as $i => $cid) {
+$link->query('DELETE FROM course_lesson_progress');
+$link->query('DELETE FROM course_lessons');
+
+$lessonRows = [
+    [0, 'Добро пожаловать в MindBase', 'Обзор интерфейса и возможностей платформы.', 'welcome-help', 12, 1],
+    [0, 'Поиск по базе знаний', 'Как быстро находить статьи и разделы.', 'search-help', 10, 2],
+    [1, 'Правила оформления статей', 'Единый стиль Markdown в каталоге.', 'rules-help', 25, 1],
+    [1, 'Структура разделов', 'Группировка материалов по темам.', 'sections-help', 15, 2],
+    [1, 'Экспорт контента', 'Выгрузка базы в Markdown и HTML.', 'export-help', 10, 3],
+    [2, 'Чек-лист онбординга Sales', 'Первые шаги в отделе продаж.', 'checklist-sales-onboarding', 20, 1],
+    [2, 'Памятка по персональным данным', 'Правила обработки ПДн.', 'personal-data-memo', 15, 2],
+    [3, 'Runbook: платёжный шлюз', 'Действия при инциденте.', 'runbook-payment-gateway', 30, 1],
+    [3, 'Шаблон ответа: авторизация', 'Макрос для поддержки.', 'auth-error-template', 10, 2],
+    [4, 'Тест: персональные данные', 'Пройдите памятку и отметьте урок.', 'personal-data-memo', 15, 1],
+    [4, 'Итоговая аттестация', 'Подтвердите прохождение курса.', null, 15, 2],
+];
+
+$stmtLesson = $link->prepare(
+    'INSERT INTO course_lessons (course_id, title, description, article_slug, duration_minutes, sort_order) VALUES (?, ?, ?, ?, ?, ?)'
+);
+foreach ($lessonRows as [$idx, $title, $desc, $slug, $mins, $ord]) {
+    $cid = $courseIds[$idx] ?? 0;
     if ($cid <= 0) {
         continue;
     }
-    $p = $progress[$i] ?? 0;
-    $stmtProg->bind_param('iii', $demoId, $cid, $p);
-    $stmtProg->execute();
+    $stmtLesson->bind_param('isssii', $cid, $title, $desc, $slug, $mins, $ord);
+    $stmtLesson->execute();
 }
-$stmtProg->close();
+$stmtLesson->close();
+
+$demoId = $userIds['demo@mindbase.local'] ?? $adminId;
+$lessonIdsByCourse = [];
+$r = $link->query('SELECT id, course_id FROM course_lessons ORDER BY course_id, sort_order, id');
+if ($r instanceof mysqli_result) {
+    while ($row = $r->fetch_assoc()) {
+        $lessonIdsByCourse[(int) $row['course_id']][] = (int) $row['id'];
+    }
+    $r->free();
+}
+
+$stmtLessonProg = $link->prepare('INSERT IGNORE INTO course_lesson_progress (user_id, lesson_id) VALUES (?, ?)');
+foreach ($courseIds as $i => $cid) {
+    if ($cid <= 0 || !isset($lessonIdsByCourse[$cid])) {
+        continue;
+    }
+    $lessons = $lessonIdsByCourse[$cid];
+    $completeCount = match ($i) {
+        0 => count($lessons),
+        1 => (int) ceil(count($lessons) * 0.75),
+        2 => (int) ceil(count($lessons) * 0.5),
+        default => 0,
+    };
+    for ($j = 0; $j < $completeCount && $j < count($lessons); $j++) {
+        $lid = $lessons[$j];
+        $stmtLessonProg->bind_param('ii', $demoId, $lid);
+        $stmtLessonProg->execute();
+    }
+}
+$stmtLessonProg->close();
+
+foreach ($courseIds as $cid) {
+    if ($cid <= 0) {
+        continue;
+    }
+    $total = count($lessonIdsByCourse[$cid] ?? []);
+    $done = 0;
+    $stmtCount = $link->prepare(
+        'SELECT COUNT(*) AS c FROM course_lesson_progress clp
+         INNER JOIN course_lessons l ON l.id = clp.lesson_id
+         WHERE l.course_id = ? AND clp.user_id = ?'
+    );
+    if ($stmtCount !== false) {
+        $stmtCount->bind_param('ii', $cid, $demoId);
+        $stmtCount->execute();
+        $done = (int) ($stmtCount->get_result()->fetch_assoc()['c'] ?? 0);
+        $stmtCount->close();
+    }
+    $percent = $total > 0 ? (int) round($done / $total * 100) : 0;
+    $stmtProg = $link->prepare(
+        'INSERT INTO course_progress (user_id, course_id, progress_percent) VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE progress_percent = VALUES(progress_percent)'
+    );
+    if ($stmtProg !== false) {
+        $stmtProg->bind_param('iii', $demoId, $cid, $percent);
+        $stmtProg->execute();
+        $stmtProg->close();
+    }
+}
 
 $link->close();
 

@@ -23,12 +23,12 @@ $children = mb_categories_list((int) $category['id']);
 
 mb_cabinet_head($category['name']);
 mb_cabinet_header_render($user, 'Поиск...');
-mb_cabinet_sidebar_open('catalog');
+mb_cabinet_sidebar_open('catalog', '', 'cabinet-main--wide');
 ?>
       <nav class="cabinet-breadcrumb">
         <a href="knowledge-catalog.php">Каталог</a>
-        <span>/</span>
-        <span><?= mb_h($category['name']) ?></span>
+        <span class="cabinet-breadcrumb-sep">/</span>
+        <span class="cabinet-breadcrumb-current"><?= mb_h($category['name']) ?></span>
       </nav>
 
       <h1 class="cabinet-page-title"><?= mb_h($category['icon']) ?> <?= mb_h($category['name']) ?></h1>
@@ -46,10 +46,27 @@ mb_cabinet_sidebar_open('catalog');
 
       <?php if ($children !== []): ?>
       <h2 class="cabinet-section-heading">Подразделы</h2>
-      <div class="cabinet-chips">
-        <?php foreach ($children as $ch): ?>
-        <a href="category.php?slug=<?= rawurlencode($ch['slug']) ?>" class="cabinet-chip-link"><?= mb_h($ch['name']) ?> <span class="cabinet-chip-count"><?= (int) $ch['article_count'] ?></span></a>
-        <?php endforeach; ?>
+      <div class="cabinet-panel cabinet-panel--table">
+        <div class="cabinet-table-wrap">
+          <table class="cabinet-table cabinet-table--data cabinet-table--compact">
+            <thead>
+              <tr>
+                <th>Раздел</th>
+                <th class="col-count">Статей</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($children as $ch): ?>
+              <tr>
+                <td data-label="Раздел">
+                  <a href="category.php?slug=<?= rawurlencode($ch['slug']) ?>" class="cabinet-table-link"><?= mb_h($ch['name']) ?></a>
+                </td>
+                <td class="col-count" data-label="Статей"><?= (int) $ch['article_count'] ?></td>
+              </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
       </div>
       <?php endif; ?>
 
@@ -57,16 +74,30 @@ mb_cabinet_sidebar_open('catalog');
       <?php if ($articles === []): ?>
       <p class="cabinet-muted-text">В разделе пока нет статей.</p>
       <?php else: ?>
-      <ul class="cabinet-feed cabinet-feed--links">
-        <?php foreach ($articles as $a): ?>
-        <li class="cabinet-feed-item">
-          <a href="article.php?slug=<?= rawurlencode($a['slug']) ?>" class="cabinet-feed-link">
-            <span class="cabinet-feed-title"><?= mb_h($a['title']) ?></span>
-            <span class="cabinet-feed-meta"><?= mb_h($a['author_name']) ?> · <?= mb_h(mb_format_datetime($a['updated_at'])) ?></span>
-          </a>
-        </li>
-        <?php endforeach; ?>
-      </ul>
+      <div class="cabinet-panel cabinet-panel--table cabinet-panel--wide">
+        <div class="cabinet-table-wrap">
+          <table class="cabinet-table cabinet-table--data">
+            <thead>
+              <tr>
+                <th class="col-title">Название</th>
+                <th class="col-author">Автор</th>
+                <th class="col-date">Обновлено</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($articles as $a): ?>
+              <tr>
+                <td class="col-title" data-label="Название">
+                  <a href="article.php?slug=<?= rawurlencode($a['slug']) ?>" class="cabinet-table-link"><?= mb_h($a['title']) ?></a>
+                </td>
+                <td class="col-author" data-label="Автор"><?= mb_h($a['author_name']) ?></td>
+                <td class="col-date" data-label="Обновлено"><?= mb_h(mb_format_datetime($a['updated_at'])) ?></td>
+              </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
       <?php endif; ?>
 <?php
 mb_cabinet_sidebar_close();
