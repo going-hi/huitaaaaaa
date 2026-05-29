@@ -1349,6 +1349,19 @@ body {
   font-size: 0.9rem;
 }
 
+.cabinet-article-body h1,
+.cabinet-article-body h2,
+.cabinet-article-body h3 {
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.cabinet-article-body p,
+.cabinet-article-body li {
+  color: var(--text-muted);
+  line-height: 1.65;
+}
+
 .cabinet-article code {
   color: var(--accent);
 }

@@ -3,25 +3,33 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/lib/bootstrap.php';
+require_once __DIR__ . '/lib/security.php';
 require_once __DIR__ . '/lib/auth.php';
+require_once __DIR__ . '/lib/knowledge.php';
 require_once __DIR__ . '/lib/cabinet-nav.php';
+require_once __DIR__ . '/lib/cabinet-layout.php';
 mb_require_login();
 $user = mb_current_user();
-?>
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Настройки — MindBase</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body class="cabinet-page">
-  <div class="noise"></div>
+$workspace = mb_workspace_get();
+$error = null;
+$success = null;
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['workspace_title'])) {
+    if (!mb_csrf_validate(isset($_POST['_csrf']) ? (string) $_POST['_csrf'] : null)) {
+        $error = 'Сессия устарела.';
+    } else {
+        $err = mb_workspace_save((string) $_POST['workspace_title']);
+        if ($err !== null) {
+            $error = $err;
+        } else {
+            $success = 'Настройки сохранены.';
+            $workspace = mb_workspace_get();
+        }
+    }
+}
+
+mb_cabinet_head('Настройки');
+?>
   <header class="cabinet-header">
     <div class="cabinet-header-inner">
       <a href="index.php" class="logo">
@@ -47,32 +55,35 @@ $user = mb_current_user();
 
     <main class="cabinet-main">
       <h1 class="cabinet-page-title">Настройки</h1>
-      <p class="cabinet-page-lead">Экспорт и параметры рабочего пространства (без бэкенда).</p>
+      <p class="cabinet-page-lead">Экспорт контента и название рабочего пространства.</p>
+      <?php if ($error !== null): ?>
+      <p class="auth-alert auth-alert--error"><?= mb_h($error) ?></p>
+      <?php endif; ?>
+      <?php if ($success !== null): ?>
+      <p class="auth-alert auth-alert--success"><?= mb_h($success) ?></p>
+      <?php endif; ?>
 
       <h2 class="cabinet-section-heading">Экспорт базы знаний</h2>
       <div class="cabinet-panel">
-        <p class="cabinet-muted-text" style="margin-bottom: 16px;">Выгрузите копию контента в удобном формате.</p>
+        <p class="cabinet-muted-text" style="margin-bottom: 16px;">Выгрузите все статьи из базы.</p>
         <div class="cabinet-inline-btns">
-          <button type="button" class="btn btn-outline">Скачать Markdown</button>
-          <button type="button" class="btn btn-outline">Скачать HTML</button>
+          <a href="export.php?format=md" class="btn btn-outline">Скачать Markdown</a>
+          <a href="export.php?format=html" class="btn btn-outline">Скачать HTML</a>
         </div>
       </div>
 
       <h2 class="cabinet-section-heading">Рабочее пространство</h2>
       <div class="cabinet-panel">
-        <label class="form-label">
-          <span>Название базы</span>
-          <input type="text" class="form-input" value="Команда «Инним» — внутренняя база">
-        </label>
-        <div class="cabinet-form-actions">
-          <button type="button" class="btn btn-primary">Сохранить</button>
-        </div>
-      </div>
-
-      <h2 class="cabinet-section-heading">Опасная зона</h2>
-      <div class="cabinet-panel cabinet-panel--danger">
-        <p class="cabinet-muted-text">Удаление базы необратимо. Перед удалением рекомендуем экспортировать данные.</p>
-        <button type="button" class="btn btn-outline" style="border-color: rgba(248, 113, 113, 0.5); color: #fca5a5;">Удалить рабочее пространство</button>
+        <form class="cabinet-form" method="post" action="cabinet-settings.php">
+          <input type="hidden" name="_csrf" value="<?= mb_h(mb_csrf_token()) ?>">
+          <label class="form-label">
+            <span>Название базы</span>
+            <input type="text" name="workspace_title" class="form-input" value="<?= mb_h($workspace['title']) ?>" required maxlength="255">
+          </label>
+          <div class="cabinet-form-actions">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+          </div>
+        </form>
       </div>
     </main>
   </div>

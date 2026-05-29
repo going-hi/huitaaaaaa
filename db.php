@@ -9,4 +9,4 @@ $link = mysqli_connect($host, $user, $pass, $db, $port);
 if (!$link) {
     die("Ошибка подключения MySQL: " . mysqli_connect_error());
 }
-$link->query("set names utf8");
+$link->set_charset('utf8mb4');

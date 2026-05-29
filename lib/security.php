@@ -58,6 +58,11 @@ function mb_login_redirect_target(?string $next): string
         'knowledge-catalog.php',
         'learning-materials.php',
         'documents.php',
+        'article.php',
+        'article-edit.php',
+        'search.php',
+        'category.php',
+        'export.php',
     ];
     if ($next === null) {
         return $default;
