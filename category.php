@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/lib/bootstrap.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/knowledge.php';
+require_once __DIR__ . '/lib/roles.php';
 require_once __DIR__ . '/lib/cabinet-nav.php';
 require_once __DIR__ . '/lib/cabinet-layout.php';
 mb_require_login();
@@ -37,7 +38,10 @@ mb_cabinet_header_render($user, 'Поиск по каталогу...');
       <?php endif; ?>
       <div class="cabinet-meta-strip">
         <span class="cabinet-pill"><strong><?= (int) $count ?></strong> материалов в разделе</span>
-        <a href="article-edit.php" class="btn btn-primary btn-sm">Новая статья</a>
+        <?php if (mb_can_write()): ?>
+        <a href="article-edit.php?category=<?= (int) $category['id'] ?>" class="btn btn-primary btn-sm">Новая статья</a>
+        <a href="category-edit.php?id=<?= (int) $category['id'] ?>" class="btn btn-outline btn-sm">Изменить раздел</a>
+        <?php endif; ?>
       </div>
       <?php if ($children !== []): ?>
       <h2 class="cabinet-section-heading">Подразделы</h2>

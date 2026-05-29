@@ -6,6 +6,7 @@ require_once __DIR__ . '/lib/bootstrap.php';
 require_once __DIR__ . '/lib/security.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/knowledge.php';
+require_once __DIR__ . '/lib/roles.php';
 require_once __DIR__ . '/lib/cabinet-nav.php';
 require_once __DIR__ . '/lib/cabinet-layout.php';
 mb_require_login();
@@ -76,6 +77,10 @@ mb_cabinet_head('Профиль');
           <label class="form-label">
             <span>Email</span>
             <input type="email" class="form-input form-input-readonly" value="<?= mb_h($profile['email']) ?>" readonly>
+          </label>
+          <label class="form-label">
+            <span>Роль в системе</span>
+            <input type="text" class="form-input form-input-readonly" value="<?= mb_h(mb_role_label(mb_user_role())) ?>" readonly>
           </label>
           <label class="form-label">
             <span>Должность (необязательно)</span>

@@ -63,6 +63,10 @@ function mb_login_redirect_target(?string $next): string
         'search.php',
         'category.php',
         'export.php',
+        'category-edit.php',
+        'document-download.php',
+        'admin-users.php',
+        'admin-access.php',
     ];
     if ($next === null) {
         return $default;

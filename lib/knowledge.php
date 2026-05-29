@@ -3,6 +3,17 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/roles.php';
+
+function mb_storage_documents_dir(): string
+{
+    $dir = MB_ROOT . '/storage/documents';
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
+
+    return $dir;
+}
 
 function mb_slugify(string $text): string
 {
@@ -41,6 +52,8 @@ function mb_unique_slug(mysqli $db, string $base, string $table = 'articles'): s
     while (true) {
         if ($table === 'categories') {
             $stmt = $db->prepare('SELECT id FROM categories WHERE slug = ? LIMIT 1');
+        } elseif ($table === 'access_groups') {
+            $stmt = $db->prepare('SELECT id FROM access_groups WHERE slug = ? LIMIT 1');
         } else {
             $stmt = $db->prepare('SELECT id FROM articles WHERE slug = ? LIMIT 1');
         }
@@ -270,15 +283,20 @@ function mb_user_get(int $id): ?array
 function mb_categories_list(?int $parentId = null): array
 {
     $db = mb_db();
+    $vis = mb_sql_category_visible('c.id');
     if ($parentId === null) {
-        $sql = 'SELECT c.id, c.parent_id, c.name, c.slug, c.icon, c.description, c.sort_order,
+        $sql = "SELECT c.id, c.parent_id, c.name, c.slug, c.icon, c.description, c.sort_order,
             (SELECT COUNT(*) FROM articles a WHERE a.category_id = c.id) AS article_count
-            FROM categories c WHERE c.parent_id IS NULL ORDER BY c.sort_order, c.name';
+            FROM categories c WHERE c.parent_id IS NULL AND c.slug != 'help' AND {$vis}
+            ORDER BY c.sort_order, c.name";
         $res = $db->query($sql);
     } else {
-        $stmt = $db->prepare('SELECT c.id, c.parent_id, c.name, c.slug, c.icon, c.description, c.sort_order,
+        if (!mb_user_can_view_category($parentId)) {
+            return [];
+        }
+        $stmt = $db->prepare("SELECT c.id, c.parent_id, c.name, c.slug, c.icon, c.description, c.sort_order,
             (SELECT COUNT(*) FROM articles a WHERE a.category_id = c.id) AS article_count
-            FROM categories c WHERE c.parent_id = ? ORDER BY c.sort_order, c.name');
+            FROM categories c WHERE c.parent_id = ? AND {$vis} ORDER BY c.sort_order, c.name");
         if ($stmt === false) {
             return [];
         }
@@ -322,6 +340,9 @@ function mb_category_by_slug(string $slug): ?array
     if ($row === null) {
         return null;
     }
+    if (!mb_user_can_view_category((int) $row['id'])) {
+        return null;
+    }
 
     return [
         'id' => (int) $row['id'],
@@ -330,14 +351,58 @@ function mb_category_by_slug(string $slug): ?array
         'slug' => (string) $row['slug'],
         'icon' => (string) $row['icon'],
         'description' => (string) ($row['description'] ?? ''),
+        'group_ids' => mb_category_group_ids((int) $row['id']),
     ];
+}
+
+/** @return list<array<string,mixed>> */
+function mb_categories_list_all(?int $parentId = null): array
+{
+    $db = mb_db();
+    if ($parentId === null) {
+        $sql = 'SELECT c.id, c.parent_id, c.name, c.slug, c.icon, c.description, c.sort_order,
+            (SELECT COUNT(*) FROM articles a WHERE a.category_id = c.id) AS article_count
+            FROM categories c WHERE c.parent_id IS NULL ORDER BY c.sort_order, c.name';
+        $res = $db->query($sql);
+    } else {
+        $stmt = $db->prepare('SELECT c.id, c.parent_id, c.name, c.slug, c.icon, c.description, c.sort_order,
+            (SELECT COUNT(*) FROM articles a WHERE a.category_id = c.id) AS article_count
+            FROM categories c WHERE c.parent_id = ? ORDER BY c.sort_order, c.name');
+        if ($stmt === false) {
+            return [];
+        }
+        $stmt->bind_param('i', $parentId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+    }
+    if (!$res instanceof mysqli_result) {
+        return [];
+    }
+    $rows = [];
+    while ($row = $res->fetch_assoc()) {
+        $rows[] = [
+            'id' => (int) $row['id'],
+            'parent_id' => $row['parent_id'] !== null ? (int) $row['parent_id'] : null,
+            'name' => (string) $row['name'],
+            'slug' => (string) $row['slug'],
+            'icon' => (string) $row['icon'],
+            'description' => (string) ($row['description'] ?? ''),
+            'sort_order' => (int) $row['sort_order'],
+            'article_count' => (int) $row['article_count'],
+            'group_ids' => mb_category_group_ids((int) $row['id']),
+        ];
+    }
+    $res->free();
+
+    return $rows;
 }
 
 /** @return list<array<string,mixed>> */
 function mb_category_tree(): array
 {
     $db = mb_db();
-    $res = $db->query('SELECT id, parent_id, name, slug FROM categories ORDER BY sort_order, name');
+    $vis = mb_sql_category_visible('id');
+    $res = $db->query("SELECT id, parent_id, name, slug FROM categories WHERE slug != 'help' AND {$vis} ORDER BY sort_order, name");
     if (!$res instanceof mysqli_result) {
         return [];
     }
@@ -423,14 +488,15 @@ function mb_articles_recent(int $limit = 5, bool $helpOnly = false): array
 {
     $db = mb_db();
     $help = $helpOnly ? 1 : 0;
+    $vis = mb_sql_category_visible('a.category_id');
     $stmt = $db->prepare(
-        'SELECT a.id, a.title, a.slug, a.excerpt, a.updated_at, a.is_help,
+        "SELECT a.id, a.title, a.slug, a.excerpt, a.updated_at, a.is_help,
         c.name AS category_name, c.slug AS category_slug, u.name AS author_name
         FROM articles a
         JOIN categories c ON c.id = a.category_id
         JOIN users u ON u.id = a.author_id
-        WHERE a.is_help = ?
-        ORDER BY a.updated_at DESC LIMIT ?'
+        WHERE a.is_help = ? AND (a.is_help = 1 OR {$vis})
+        ORDER BY a.updated_at DESC LIMIT ?"
     );
     if ($stmt === false) {
         return [];
@@ -467,6 +533,9 @@ function mb_article_row_map(array $row): array
 function mb_articles_by_category(int $categoryId, int $limit = 50): array
 {
     $db = mb_db();
+    if (!mb_user_can_view_category($categoryId)) {
+        return [];
+    }
     $stmt = $db->prepare(
         'SELECT a.id, a.title, a.slug, a.excerpt, a.updated_at, a.is_help,
         c.name AS category_name, c.slug AS category_slug, u.name AS author_name
@@ -513,6 +582,10 @@ function mb_article_by_slug(string $slug): ?array
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
     if ($row === null) {
+        return null;
+    }
+    $isHelp = (bool) $row['is_help'];
+    if (!$isHelp && !mb_user_can_view_category((int) $row['category_id'])) {
         return null;
     }
 
@@ -572,20 +645,27 @@ function mb_article_record_view(int $articleId, ?int $userId): void
 }
 
 /** @return list<array<string,mixed>> */
-function mb_search_articles(string $q, int $limit = 30): array
+function mb_search_articles(string $q, int $limit = 30, ?int $categoryId = null): array
 {
     $q = trim($q);
     if ($q === '') {
         return [];
     }
     $db = mb_db();
+    $vis = mb_sql_category_visible('a.category_id');
     $like = '%' . $db->real_escape_string($q) . '%';
+    $catFilter = '';
+    if ($categoryId !== null && $categoryId > 0) {
+        $catFilter = ' AND a.category_id = ' . (int) $categoryId;
+    }
     $sql = "SELECT a.id, a.title, a.slug, a.excerpt, a.updated_at, a.is_help,
         c.name AS category_name, c.slug AS category_slug, u.name AS author_name
         FROM articles a
         JOIN categories c ON c.id = a.category_id
         JOIN users u ON u.id = a.author_id
-        WHERE a.title LIKE '{$like}' OR a.excerpt LIKE '{$like}' OR a.body LIKE '{$like}'
+        WHERE (a.is_help = 1 OR {$vis})
+        AND (a.title LIKE '{$like}' OR a.excerpt LIKE '{$like}' OR a.body LIKE '{$like}')
+        {$catFilter}
         ORDER BY a.updated_at DESC LIMIT " . (int) $limit;
     $res = $db->query($sql);
     if (!$res instanceof mysqli_result) {
@@ -593,11 +673,37 @@ function mb_search_articles(string $q, int $limit = 30): array
     }
     $rows = [];
     while ($row = $res->fetch_assoc()) {
-        $rows[] = mb_article_row_map($row);
+        $mapped = mb_article_row_map($row);
+        $mapped['snippet'] = mb_search_snippet((string) ($row['excerpt'] ?? ''), $q);
+        $rows[] = $mapped;
     }
     $res->free();
 
     return $rows;
+}
+
+function mb_search_snippet(string $excerpt, string $q): string
+{
+    if ($excerpt !== '') {
+        return $excerpt;
+    }
+
+    return 'Совпадение в тексте статьи';
+}
+
+function mb_search_highlight(string $text, string $q): string
+{
+    $text = mb_h($text);
+    $words = preg_split('/\s+/u', trim($q)) ?: [];
+    foreach ($words as $w) {
+        if (mb_strlen($w, 'UTF-8') < 2) {
+            continue;
+        }
+        $pattern = '/' . preg_quote($w, '/') . '/iu';
+        $text = preg_replace($pattern, '<mark>$0</mark>', $text) ?? $text;
+    }
+
+    return $text;
 }
 
 /** @return array{articles:int,categories:int,team:int,views_week:int} */
@@ -656,6 +762,15 @@ function mb_article_save(
     string $body,
     bool $isHelp = false
 ): array {
+    if (!mb_can_write()) {
+        return ['error' => 'Нет прав на редактирование.'];
+    }
+    if (!$isHelp && !mb_user_can_view_category($categoryId)) {
+        return ['error' => 'Нет доступа к выбранному разделу.'];
+    }
+    if ($isHelp && !mb_is_admin()) {
+        return ['error' => 'Справку может редактировать только администратор.'];
+    }
     $title = trim($title);
     $excerpt = trim($excerpt);
     $body = trim($body);
@@ -758,7 +873,9 @@ function mb_help_articles(): array
 function mb_documents_list(): array
 {
     $db = mb_db();
-    $res = $db->query('SELECT id, title, file_type, size_bytes, owner_label, folder_path, updated_at FROM documents ORDER BY updated_at DESC');
+    $vis = mb_sql_document_visible('d.id');
+    $res = $db->query("SELECT d.id, d.title, d.file_type, d.stored_name, d.size_bytes, d.owner_label, d.folder_path, d.updated_at
+        FROM documents d WHERE {$vis} ORDER BY d.updated_at DESC");
     if (!$res instanceof mysqli_result) {
         return [];
     }
@@ -768,15 +885,278 @@ function mb_documents_list(): array
             'id' => (int) $row['id'],
             'title' => (string) $row['title'],
             'file_type' => (string) $row['file_type'],
+            'stored_name' => $row['stored_name'] !== null ? (string) $row['stored_name'] : null,
             'size_bytes' => (int) $row['size_bytes'],
             'owner_label' => (string) $row['owner_label'],
             'folder_path' => (string) $row['folder_path'],
             'updated_at' => (string) $row['updated_at'],
+            'has_file' => $row['stored_name'] !== null && $row['stored_name'] !== '',
         ];
     }
     $res->free();
 
     return $rows;
+}
+
+/** @return array<string,mixed>|null */
+function mb_document_by_id(int $id): ?array
+{
+    $db = mb_db();
+    $vis = mb_sql_document_visible('d.id');
+    $stmt = $db->prepare("SELECT d.id, d.title, d.file_type, d.stored_name, d.mime_type, d.size_bytes,
+        d.owner_label, d.folder_path, d.updated_at FROM documents d WHERE d.id = ? AND {$vis} LIMIT 1");
+    if ($stmt === false) {
+        return null;
+    }
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if ($row === null) {
+        return null;
+    }
+
+    return [
+        'id' => (int) $row['id'],
+        'title' => (string) $row['title'],
+        'file_type' => (string) $row['file_type'],
+        'stored_name' => (string) ($row['stored_name'] ?? ''),
+        'mime_type' => (string) ($row['mime_type'] ?? 'application/octet-stream'),
+        'size_bytes' => (int) $row['size_bytes'],
+        'owner_label' => (string) $row['owner_label'],
+        'folder_path' => (string) $row['folder_path'],
+        'updated_at' => (string) $row['updated_at'],
+    ];
+}
+
+function mb_document_file_path(array $doc): ?string
+{
+    if ($doc['stored_name'] === '') {
+        return null;
+    }
+    $path = mb_storage_documents_dir() . '/' . basename($doc['stored_name']);
+    if (!is_file($path)) {
+        return null;
+    }
+
+    return $path;
+}
+
+function mb_document_upload(int $userId, array $file, string $title, string $ownerLabel, string $folderPath, array $groupIds): array
+{
+    if (!mb_can_write()) {
+        return ['error' => 'Нет прав на загрузку.'];
+    }
+    if (!isset($file['error']) || $file['error'] !== UPLOAD_ERR_OK) {
+        return ['error' => 'Ошибка загрузки файла.'];
+    }
+    $maxSize = 15 * 1024 * 1024;
+    if ((int) ($file['size'] ?? 0) > $maxSize) {
+        return ['error' => 'Файл больше 15 МБ.'];
+    }
+    $title = trim($title);
+    if ($title === '') {
+        return ['error' => 'Укажите название.'];
+    }
+    $ext = strtolower(pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
+    $allowed = ['pdf', 'doc', 'docx', 'txt', 'xlsx', 'csv', 'md'];
+    if (!in_array($ext, $allowed, true)) {
+        return ['error' => 'Допустимые форматы: PDF, DOC, DOCX, TXT, XLSX, CSV, MD.'];
+    }
+    $mimeMap = [
+        'pdf' => 'application/pdf',
+        'doc' => 'application/msword',
+        'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'txt' => 'text/plain',
+        'md' => 'text/markdown',
+        'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'csv' => 'text/csv',
+    ];
+    $stored = bin2hex(random_bytes(16)) . '.' . $ext;
+    $dest = mb_storage_documents_dir() . '/' . $stored;
+    if (!move_uploaded_file((string) $file['tmp_name'], $dest)) {
+        return ['error' => 'Не удалось сохранить файл.'];
+    }
+    $db = mb_db();
+    $size = (int) filesize($dest);
+    $ftype = strtoupper($ext);
+    $folderPath = trim($folderPath) !== '' ? trim($folderPath) : '/';
+    if ($folderPath[0] !== '/') {
+        $folderPath = '/' . $folderPath;
+    }
+    $mime = $mimeMap[$ext] ?? 'application/octet-stream';
+    $stmt = $db->prepare('INSERT INTO documents (title, file_type, stored_name, mime_type, size_bytes, owner_label, folder_path, uploaded_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    if ($stmt === false) {
+        @unlink($dest);
+
+        return ['error' => 'Ошибка БД.'];
+    }
+    $stmt->bind_param('ssssissi', $title, $ftype, $stored, $mime, $size, $ownerLabel, $folderPath, $userId);
+    if (!$stmt->execute()) {
+        @unlink($dest);
+        $stmt->close();
+
+        return ['error' => 'Ошибка БД.'];
+    }
+    $docId = (int) $stmt->insert_id;
+    $stmt->close();
+    mb_document_set_groups($docId, $groupIds);
+
+    return ['id' => $docId];
+}
+
+function mb_document_delete(int $id): ?string
+{
+    if (!mb_can_write()) {
+        return 'Нет прав.';
+    }
+    $doc = mb_document_by_id($id);
+    if ($doc === null && mb_is_admin()) {
+        $db = mb_db();
+        $stmt = $db->prepare('SELECT stored_name FROM documents WHERE id = ?');
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        if ($row === null) {
+            return 'Документ не найден.';
+        }
+        $doc = ['stored_name' => (string) ($row['stored_name'] ?? '')];
+    }
+    if ($doc === null) {
+        return 'Документ не найден.';
+    }
+    $path = $doc['stored_name'] !== '' ? mb_storage_documents_dir() . '/' . basename($doc['stored_name']) : null;
+    $db = mb_db();
+    $stmt = $db->prepare('DELETE FROM documents WHERE id = ?');
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $stmt->close();
+    if ($path !== null && is_file($path)) {
+        @unlink($path);
+    }
+
+    return null;
+}
+
+/** @param list<int> $groupIds */
+function mb_category_save(
+    ?int $id,
+    ?int $parentId,
+    string $name,
+    string $icon,
+    string $description,
+    int $sortOrder,
+    array $groupIds
+): array {
+    if (!mb_can_write()) {
+        return ['error' => 'Нет прав на редактирование разделов.'];
+    }
+    $name = trim($name);
+    if ($name === '') {
+        return ['error' => 'Укажите название раздела.'];
+    }
+    $db = mb_db();
+    $slug = mb_unique_slug($db, mb_slugify($name), 'categories');
+    if ($id !== null) {
+        $existing = mb_category_by_id($id);
+        if ($existing === null && !mb_is_admin()) {
+            return ['error' => 'Раздел не найден.'];
+        }
+        if ($existing !== null) {
+            $slug = $existing['slug'];
+            if (mb_slugify($name) !== mb_slugify($existing['name'])) {
+                $slug = mb_unique_slug($db, mb_slugify($name), 'categories');
+            }
+        }
+        $stmt = $db->prepare('UPDATE categories SET parent_id = ?, name = ?, slug = ?, icon = ?, description = ?, sort_order = ? WHERE id = ?');
+        if ($stmt === false) {
+            return ['error' => 'Ошибка сохранения.'];
+        }
+        $stmt->bind_param('issssii', $parentId, $name, $slug, $icon, $description, $sortOrder, $id);
+        $stmt->execute();
+        $stmt->close();
+        if (mb_is_admin()) {
+            mb_category_set_groups($id, $groupIds);
+        }
+
+        return ['id' => $id, 'slug' => $slug];
+    }
+    $stmt = $db->prepare('INSERT INTO categories (parent_id, name, slug, icon, description, sort_order) VALUES (?, ?, ?, ?, ?, ?)');
+    if ($stmt === false) {
+        return ['error' => 'Ошибка сохранения.'];
+    }
+    $stmt->bind_param('issssi', $parentId, $name, $slug, $icon, $description, $sortOrder);
+    $stmt->execute();
+    $newId = (int) $stmt->insert_id;
+    $stmt->close();
+    if (mb_is_admin()) {
+        mb_category_set_groups($newId, $groupIds);
+    }
+
+    return ['id' => $newId, 'slug' => $slug];
+}
+
+/** @return array<string,mixed>|null */
+function mb_category_by_id(int $id): ?array
+{
+    $db = mb_db();
+    $stmt = $db->prepare('SELECT id, parent_id, name, slug, icon, description, sort_order FROM categories WHERE id = ? LIMIT 1');
+    if ($stmt === false) {
+        return null;
+    }
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if ($row === null) {
+        return null;
+    }
+
+    return [
+        'id' => (int) $row['id'],
+        'parent_id' => $row['parent_id'] !== null ? (int) $row['parent_id'] : null,
+        'name' => (string) $row['name'],
+        'slug' => (string) $row['slug'],
+        'icon' => (string) $row['icon'],
+        'description' => (string) ($row['description'] ?? ''),
+        'sort_order' => (int) $row['sort_order'],
+        'group_ids' => mb_category_group_ids((int) $row['id']),
+    ];
+}
+
+function mb_category_delete(int $id): ?string
+{
+    if (!mb_can_write()) {
+        return 'Нет прав.';
+    }
+    $cat = mb_category_by_id($id);
+    if ($cat === null) {
+        return 'Раздел не найден.';
+    }
+    $db = mb_db();
+    $children = mb_categories_list_all($id);
+    if ($children !== []) {
+        return 'Сначала удалите подразделы.';
+    }
+    $stmt = $db->prepare('SELECT COUNT(*) AS c FROM articles WHERE category_id = ?');
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $count = (int) ($stmt->get_result()->fetch_assoc()['c'] ?? 0);
+    $stmt->close();
+    if ($count > 0 && !mb_is_admin()) {
+        return 'В разделе есть статьи. Удаление доступно только администратору.';
+    }
+    if ($count > 0 && mb_is_admin()) {
+        $db->query('DELETE FROM articles WHERE category_id = ' . (int) $id);
+    }
+    $stmt = $db->prepare('DELETE FROM categories WHERE id = ?');
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $stmt->close();
+
+    return null;
 }
 
 /** @return array{files:int,folders:int,bytes:int} */
@@ -929,7 +1309,8 @@ function mb_format_duration(int $minutes): string
 function mb_export_articles(): array
 {
     $db = mb_db();
-    $res = $db->query('SELECT id, title, slug, body, updated_at FROM articles ORDER BY id');
+    $vis = mb_sql_category_visible('a.category_id');
+    $res = $db->query("SELECT a.id, a.title, a.slug, a.body, a.updated_at FROM articles a WHERE a.is_help = 1 OR {$vis} ORDER BY a.id");
     if (!$res instanceof mysqli_result) {
         return [];
     }

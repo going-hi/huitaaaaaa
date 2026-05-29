@@ -6,10 +6,13 @@ require_once __DIR__ . '/lib/bootstrap.php';
 require_once __DIR__ . '/lib/security.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/knowledge.php';
+require_once __DIR__ . '/lib/roles.php';
 require_once __DIR__ . '/lib/cabinet-nav.php';
 require_once __DIR__ . '/lib/cabinet-layout.php';
 mb_require_login();
+mb_require_write();
 $user = mb_current_user();
+$prefillCategory = isset($_GET['category']) ? (int) $_GET['category'] : null;
 
 $id = isset($_GET['id']) ? (int) $_GET['id'] : null;
 $article = null;
@@ -49,6 +52,9 @@ foreach (mb_categories_list(null) as $top) {
         $allCategories[] = $sub;
     }
 }
+if ($prefillCategory && !$article) {
+    $article = ['category_id' => $prefillCategory];
+}
 
 mb_cabinet_head($article ? 'Редактирование' : 'Новая статья');
 mb_cabinet_header_render($user, 'Поиск...');
@@ -71,7 +77,7 @@ mb_cabinet_header_render($user, 'Поиск...');
             <span>Раздел</span>
             <select name="category_id" class="form-input" required>
               <?php foreach ($allCategories as $c): ?>
-              <option value="<?= (int) $c['id'] ?>" <?= ($article && (int) $article['category_id'] === (int) $c['id']) ? 'selected' : '' ?>>
+              <option value="<?= (int) $c['id'] ?>" <?= ($article && isset($article['category_id']) && (int) $article['category_id'] === (int) $c['id']) ? 'selected' : '' ?>>
                 <?= $c['parent_id'] ? '— ' : '' ?><?= mb_h($c['name']) ?>
               </option>
               <?php endforeach; ?>

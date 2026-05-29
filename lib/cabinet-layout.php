@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/roles.php';
+
 /**
- * @param array{id:int,name:string,email:string} $user
+ * @param array{id:int,name:string,email:string,role?:string} $user
  */
 function mb_cabinet_header_render(array $user, string $searchPlaceholder = 'Поиск...', bool $narrowSearch = true): void
 {
     $searchClass = $narrowSearch ? 'cabinet-header-search cabinet-header-search--narrow' : 'cabinet-header-search';
+    $role = mb_user_role($user);
     ?>
   <header class="cabinet-header">
     <div class="cabinet-header-inner">
@@ -19,6 +22,7 @@ function mb_cabinet_header_render(array $user, string $searchPlaceholder = 'По
         <input type="search" name="q" class="form-input cabinet-search-input" placeholder="<?= mb_h($searchPlaceholder) ?>" aria-label="<?= mb_h($searchPlaceholder) ?>" value="<?= mb_h(isset($_GET['q']) ? trim((string) $_GET['q']) : '') ?>">
       </form>
       <div class="cabinet-header-actions">
+        <span class="<?= mb_h(mb_role_badge_class($role)) ?>" title="<?= mb_h(mb_role_label($role)) ?>"><?= mb_h(mb_role_label($role)) ?></span>
         <span class="cabinet-user-chip" title="<?= mb_h($user['email']) ?>"><?= mb_h($user['name']) ?></span>
         <a href="cabinet.php" class="btn btn-ghost btn-sm">Личный кабинет</a>
         <a href="logout.php" class="btn btn-outline btn-sm">Выйти</a>

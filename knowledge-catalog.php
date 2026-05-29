@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/lib/bootstrap.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/knowledge.php';
+require_once __DIR__ . '/lib/roles.php';
 require_once __DIR__ . '/lib/cabinet-nav.php';
 require_once __DIR__ . '/lib/cabinet-layout.php';
 mb_require_login();
@@ -38,7 +39,11 @@ mb_cabinet_header_render($user, 'Поиск по каталогу...');
         <?php if ($stats['updated_today'] > 0): ?>
         <span class="cabinet-pill cabinet-pill--accent">Обновлено сегодня · <?= (int) $stats['updated_today'] ?> <?= $stats['updated_today'] === 1 ? 'запись' : 'записей' ?></span>
         <?php endif; ?>
+        <?php if (mb_can_write()): ?>
         <a href="article-edit.php" class="btn btn-primary btn-sm">Новая статья</a>
+        <a href="category-edit.php" class="btn btn-outline btn-sm">Новый раздел</a>
+        <?php endif; ?>
+        <a href="search.php" class="btn btn-ghost btn-sm">Поиск</a>
       </div>
 
       <div class="cabinet-actions-grid cabinet-actions-grid--catalog">

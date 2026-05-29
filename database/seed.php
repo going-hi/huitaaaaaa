@@ -79,18 +79,28 @@ if ($link === false) {
 
 mb_run_sql_file($link, $tablesSqlPath);
 mb_ensure_column($link, 'users', 'role_title', 'ALTER TABLE users ADD COLUMN role_title VARCHAR(120) NULL DEFAULT NULL AFTER password_hash');
+mb_ensure_column($link, 'users', 'role', "ALTER TABLE users ADD COLUMN role ENUM('admin','editor','user') NOT NULL DEFAULT 'user' AFTER password_hash");
+mb_ensure_column($link, 'documents', 'stored_name', 'ALTER TABLE documents ADD COLUMN stored_name VARCHAR(255) NULL DEFAULT NULL AFTER file_type');
+mb_ensure_column($link, 'documents', 'mime_type', "ALTER TABLE documents ADD COLUMN mime_type VARCHAR(120) NOT NULL DEFAULT 'application/octet-stream' AFTER stored_name");
+mb_ensure_column($link, 'documents', 'uploaded_by', 'ALTER TABLE documents ADD COLUMN uploaded_by INT UNSIGNED NULL DEFAULT NULL AFTER folder_path');
+
+$storageDir = $root . '/storage/documents';
+if (!is_dir($storageDir)) {
+    mkdir($storageDir, 0755, true);
+}
 
 $users = [
-    ['Демо пользователь', 'demo@mindbase.local', password_hash('demo12345', PASSWORD_DEFAULT), 'Аналитик'],
-    ['Администратор', 'admin@mindbase.local', password_hash('admin12345', PASSWORD_DEFAULT), 'Администратор базы'],
-    ['Мария Соколова', 'maria@mindbase.local', password_hash('demo12345', PASSWORD_DEFAULT), 'Инженер эксплуатации'],
-    ['Андрей Петров', 'andrey@mindbase.local', password_hash('demo12345', PASSWORD_DEFAULT), 'Менеджер продаж'],
+    ['Демо пользователь', 'demo@mindbase.local', password_hash('demo12345', PASSWORD_DEFAULT), 'Аналитик', 'user'],
+    ['Администратор', 'admin@mindbase.local', password_hash('admin12345', PASSWORD_DEFAULT), 'Администратор базы', 'admin'],
+    ['Редактор', 'editor@mindbase.local', password_hash('editor12345', PASSWORD_DEFAULT), 'Редактор контента', 'editor'],
+    ['Мария Соколова', 'maria@mindbase.local', password_hash('demo12345', PASSWORD_DEFAULT), 'Инженер эксплуатации', 'editor'],
+    ['Андрей Петров', 'andrey@mindbase.local', password_hash('demo12345', PASSWORD_DEFAULT), 'Менеджер продаж', 'user'],
 ];
 $userIds = [];
-$stmtUser = $link->prepare('INSERT INTO users (name, email, password_hash, role_title) VALUES (?, ?, ?, ?)
-    ON DUPLICATE KEY UPDATE name = VALUES(name), password_hash = VALUES(password_hash), role_title = VALUES(role_title)');
-foreach ($users as [$name, $email, $hash, $role]) {
-    $stmtUser->bind_param('ssss', $name, $email, $hash, $role);
+$stmtUser = $link->prepare('INSERT INTO users (name, email, password_hash, role_title, role) VALUES (?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE name = VALUES(name), password_hash = VALUES(password_hash), role_title = VALUES(role_title), role = VALUES(role)');
+foreach ($users as [$name, $email, $hash, $roleTitle, $role]) {
+    $stmtUser->bind_param('sssss', $name, $email, $hash, $roleTitle, $role);
     $stmtUser->execute();
     $res = $link->query("SELECT id FROM users WHERE email = '" . $link->real_escape_string($email) . "' LIMIT 1");
     if ($res instanceof mysqli_result) {
@@ -106,6 +116,26 @@ $mariaId = $userIds['maria@mindbase.local'] ?? $adminId;
 
 $link->query("INSERT INTO workspace (id, title) VALUES (1, 'Команда «Инним» — внутренняя база')
     ON DUPLICATE KEY UPDATE title = VALUES(title)");
+
+$accessGroupsSeed = [
+    ['Разработка', 'developers', 'Инженеры, DevOps, QA'],
+    ['Поддержка', 'support', 'Линии L1/L2/L3'],
+    ['HR и офис', 'hr', 'Кадры и административный блок'],
+    ['Руководство и ИБ', 'management', 'Безопасность, комплаенс, топ-менеджмент'],
+];
+$groupIds = [];
+foreach ($accessGroupsSeed as [$gname, $gslug, $gdesc]) {
+    $link->query("INSERT INTO access_groups (name, slug, description) VALUES ('"
+        . $link->real_escape_string($gname) . "', '"
+        . $link->real_escape_string($gslug) . "', '"
+        . $link->real_escape_string($gdesc) . "')
+        ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description)");
+    $r = $link->query("SELECT id FROM access_groups WHERE slug = '" . $link->real_escape_string($gslug) . "' LIMIT 1");
+    if ($r instanceof mysqli_result) {
+        $groupIds[$gslug] = (int) $r->fetch_assoc()['id'];
+        $r->free();
+    }
+}
 
 $categories = [
     ['onboarding', null, 'Онбординг', '📂', 'Инструкции для новых сотрудников, доступы, первые шаги в команде.', 10],
@@ -232,13 +262,88 @@ $docs = [
     ['Шаблон акта приёмки работ', 'DOCX', 72704, 'Финансы', '/юридические/'],
     ['Каталог API-ключей (выгрузка)', 'CSV', 49152, 'ИБ', '/клиенты/nda/'],
 ];
+$link->query('DELETE FROM document_access_groups');
 $link->query('DELETE FROM documents');
-$stmtDoc = $link->prepare('INSERT INTO documents (title, file_type, size_bytes, owner_label, folder_path) VALUES (?, ?, ?, ?, ?)');
-foreach ($docs as $d) {
-    $stmtDoc->bind_param('ssiss', $d[0], $d[1], $d[2], $d[3], $d[4]);
+$stmtDoc = $link->prepare('INSERT INTO documents (title, file_type, stored_name, mime_type, size_bytes, owner_label, folder_path, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+$docIds = [];
+foreach ($docs as $i => $d) {
+    $ext = strtolower($d[1]);
+    $stored = 'seed-doc-' . ($i + 1) . '.' . ($ext === 'docx' ? 'txt' : strtolower($ext === 'xlsx' ? 'csv' : $ext));
+    $path = $storageDir . '/' . $stored;
+    $body = "MindBase — демо-файл\nНазвание: {$d[0]}\nТип: {$d[1]}\nОтветственный: {$d[3]}\n";
+    file_put_contents($path, $body);
+    $size = (int) filesize($path);
+    $mime = match ($ext) {
+        'pdf' => 'application/pdf',
+        'csv' => 'text/csv',
+        default => 'text/plain',
+    };
+    $stmtDoc->bind_param('ssssissi', $d[0], $d[1], $stored, $mime, $size, $d[3], $d[4], $adminId);
     $stmtDoc->execute();
+    $docIds[] = (int) $link->insert_id;
 }
 $stmtDoc->close();
+
+$categoryGroupMap = [
+    'dev' => ['developers'],
+    'product-api' => ['developers'],
+    'product' => ['developers'],
+    'support' => ['support'],
+    'security' => ['management'],
+    'hr' => ['hr'],
+    'marketing' => ['management'],
+];
+$link->query('DELETE FROM category_access_groups');
+foreach ($categoryGroupMap as $catSlug => $gSlugs) {
+    if (!isset($catIds[$catSlug])) {
+        continue;
+    }
+    $cid = $catIds[$catSlug];
+    foreach ($gSlugs as $gs) {
+        if (!isset($groupIds[$gs])) {
+            continue;
+        }
+        $gid = $groupIds[$gs];
+        $link->query("INSERT IGNORE INTO category_access_groups (category_id, group_id) VALUES ({$cid}, {$gid})");
+    }
+}
+
+$docGroupMap = [
+    0 => ['management'],
+    8 => ['management'],
+];
+foreach ($docGroupMap as $idx => $gSlugs) {
+    if (!isset($docIds[$idx])) {
+        continue;
+    }
+    $did = $docIds[$idx];
+    foreach ($gSlugs as $gs) {
+        if (!isset($groupIds[$gs])) {
+            continue;
+        }
+        $link->query('INSERT IGNORE INTO document_access_groups (document_id, group_id) VALUES (' . $did . ', ' . $groupIds[$gs] . ')');
+    }
+}
+
+$link->query('DELETE FROM user_access_groups');
+$userGroupMap = [
+    'demo@mindbase.local' => ['developers'],
+    'editor@mindbase.local' => ['developers', 'support'],
+    'maria@mindbase.local' => ['developers'],
+    'andrey@mindbase.local' => ['support'],
+];
+foreach ($userGroupMap as $email => $gSlugs) {
+    if (!isset($userIds[$email])) {
+        continue;
+    }
+    $uid = $userIds[$email];
+    foreach ($gSlugs as $gs) {
+        if (!isset($groupIds[$gs])) {
+            continue;
+        }
+        $link->query('INSERT IGNORE INTO user_access_groups (user_id, group_id) VALUES (' . $uid . ', ' . $groupIds[$gs] . ')');
+    }
+}
 
 $courses = [
     ['Введение в MindBase', 'Интерфейс, роли, приглашение коллег.', 'video', 42, 'Центр компетенций', 1],
@@ -274,4 +379,7 @@ $stmtProg->close();
 $link->close();
 
 echo "Готово: схема и демо-данные в БД «{$dbName}».\n";
-echo "Учётки: demo@mindbase.local / demo12345, admin@mindbase.local / admin12345\n";
+echo "Учётки:\n";
+echo "  admin@mindbase.local / admin12345 — администратор (полный доступ)\n";
+echo "  editor@mindbase.local / editor12345 — редактор\n";
+echo "  demo@mindbase.local / demo12345 — пользователь (группа «Разработка»)\n";

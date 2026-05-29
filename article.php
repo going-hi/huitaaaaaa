@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/lib/bootstrap.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/knowledge.php';
+require_once __DIR__ . '/lib/roles.php';
 require_once __DIR__ . '/lib/cabinet-layout.php';
 mb_require_login();
 $user = mb_current_user();
@@ -20,7 +21,7 @@ if ($article === null) {
 }
 
 mb_article_record_view((int) $article['id'], $user['id']);
-$canEdit = $article['author_id'] === $user['id'] || $user['email'] === 'admin@mindbase.local';
+$canEdit = mb_can_write();
 
 mb_cabinet_head($article['title']);
 mb_cabinet_header_render($user, 'Поиск по базе...');

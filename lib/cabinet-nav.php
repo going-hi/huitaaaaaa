@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/roles.php';
+
 /**
  * @param 'catalog'|'learning'|'documents'|'overview'|'base'|'profile'|'settings' $active
  */
@@ -32,6 +34,11 @@ function mb_cabinet_nav_render(string $active, string $suffix = ''): void
         <p class="cabinet-nav-label">Аккаунт</p>
         <a href="cabinet-profile.php" class="<?= $c('profile') ?>">Профиль</a>
         <a href="cabinet-settings.php" class="<?= $c('settings') ?>">Настройки</a>
+        <?php if (mb_is_admin()): ?>
+        <p class="cabinet-nav-label">Администрирование</p>
+        <a href="admin-users.php" class="cabinet-nav-item">Пользователи</a>
+        <a href="admin-access.php" class="cabinet-nav-item">Группы доступа</a>
+        <?php endif; ?>
         <?= $suffix ?>
       </nav>
     <?php

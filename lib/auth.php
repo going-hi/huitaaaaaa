@@ -23,7 +23,7 @@ function mb_user_find_by_email(string $email): ?array
 {
     $db = mb_db();
     $email = strtolower(trim($email));
-    $stmt = $db->prepare('SELECT id, name, email, password_hash, created_at FROM users WHERE email = ? LIMIT 1');
+    $stmt = $db->prepare('SELECT id, name, email, password_hash, role, created_at FROM users WHERE email = ? LIMIT 1');
     if ($stmt === false) {
         return null;
     }
@@ -36,11 +36,14 @@ function mb_user_find_by_email(string $email): ?array
         return null;
     }
 
+    $role = (string) ($row['role'] ?? 'user');
+
     return [
         'id' => (int) $row['id'],
         'name' => (string) $row['name'],
         'email' => (string) $row['email'],
         'password_hash' => (string) $row['password_hash'],
+        'role' => in_array($role, ['admin', 'editor', 'user'], true) ? $role : 'user',
         'created_at' => (string) $row['created_at'],
     ];
 }
@@ -95,11 +98,12 @@ function mb_user_register(string $name, string $email, string $password, string 
 
     $db = mb_db();
     $hash = password_hash($password, PASSWORD_DEFAULT);
-    $stmt = $db->prepare('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)');
+    $role = 'user';
+    $stmt = $db->prepare('INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)');
     if ($stmt === false) {
         return 'Ошибка сервера при регистрации.';
     }
-    $stmt->bind_param('sss', $name, $email, $hash);
+    $stmt->bind_param('ssss', $name, $email, $hash, $role);
     if (!$stmt->execute()) {
         $stmt->close();
         if ($db->errno === 1062) {
@@ -130,6 +134,7 @@ function mb_user_login(string $login, string $password): ?string
         'id' => $user['id'],
         'name' => $user['name'],
         'email' => $user['email'],
+        'role' => $user['role'] ?? 'user',
     ];
     mb_csrf_regenerate();
 
@@ -146,7 +151,7 @@ function mb_user_logout(): void
     session_destroy();
 }
 
-/** @return array{id:int,name:string,email:string}|null */
+/** @return array{id:int,name:string,email:string,role?:string}|null */
 function mb_current_user(): ?array
 {
     if (empty($_SESSION['user']) || !is_array($_SESSION['user'])) {
@@ -156,11 +161,13 @@ function mb_current_user(): ?array
     if (!isset($u['id'], $u['name'], $u['email'])) {
         return null;
     }
+    $role = (string) ($u['role'] ?? 'user');
 
     return [
         'id' => (int) $u['id'],
         'name' => (string) $u['name'],
         'email' => (string) $u['email'],
+        'role' => in_array($role, ['admin', 'editor', 'user'], true) ? $role : 'user',
     ];
 }
 
@@ -195,7 +202,11 @@ function mb_current_request_allowed_page(): ?string
         'article-edit.php',
         'search.php',
         'category.php',
+        'category-edit.php',
         'export.php',
+        'document-download.php',
+        'admin-users.php',
+        'admin-access.php',
     ];
 
     return in_array($base, $allow, true) ? $base : null;

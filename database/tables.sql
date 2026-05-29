@@ -5,10 +5,36 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
+  role ENUM('admin','editor','user') NOT NULL DEFAULT 'user',
   role_title VARCHAR(120) NULL DEFAULT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_users_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS access_groups (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(120) NOT NULL,
+  slug VARCHAR(80) NOT NULL,
+  description VARCHAR(500) NOT NULL DEFAULT '',
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_access_groups_slug (slug)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS user_access_groups (
+  user_id INT UNSIGNED NOT NULL,
+  group_id INT UNSIGNED NOT NULL,
+  PRIMARY KEY (user_id, group_id),
+  CONSTRAINT fk_uag_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+  CONSTRAINT fk_uag_group FOREIGN KEY (group_id) REFERENCES access_groups (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS category_access_groups (
+  category_id INT UNSIGNED NOT NULL,
+  group_id INT UNSIGNED NOT NULL,
+  PRIMARY KEY (category_id, group_id),
+  CONSTRAINT fk_cag_category FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE CASCADE,
+  CONSTRAINT fk_cag_group FOREIGN KEY (group_id) REFERENCES access_groups (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS workspace (
@@ -86,12 +112,24 @@ CREATE TABLE IF NOT EXISTS documents (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   title VARCHAR(500) NOT NULL,
   file_type VARCHAR(16) NOT NULL,
+  stored_name VARCHAR(255) NULL DEFAULT NULL,
+  mime_type VARCHAR(120) NOT NULL DEFAULT 'application/octet-stream',
   size_bytes INT UNSIGNED NOT NULL DEFAULT 0,
   owner_label VARCHAR(120) NOT NULL,
   folder_path VARCHAR(255) NOT NULL DEFAULT '/',
+  uploaded_by INT UNSIGNED NULL DEFAULT NULL,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  KEY idx_documents_updated (updated_at)
+  KEY idx_documents_updated (updated_at),
+  CONSTRAINT fk_documents_uploader FOREIGN KEY (uploaded_by) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS document_access_groups (
+  document_id INT UNSIGNED NOT NULL,
+  group_id INT UNSIGNED NOT NULL,
+  PRIMARY KEY (document_id, group_id),
+  CONSTRAINT fk_dag_document FOREIGN KEY (document_id) REFERENCES documents (id) ON DELETE CASCADE,
+  CONSTRAINT fk_dag_group FOREIGN KEY (group_id) REFERENCES access_groups (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS courses (
