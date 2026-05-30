@@ -46,19 +46,41 @@ mb_cabinet_sidebar_open('admin-users');
         <?php endforeach; ?>
       </div>
 
-      <h2 class="cabinet-section-heading">Список пользователей <span class="cabinet-section-count"><?= count($users) ?></span></h2>
+      <h2 class="cabinet-section-heading">
+        Список пользователей
+        <span class="cabinet-section-count" data-admin-user-visible-count><?= count($users) ?></span>
+      </h2>
       <?php if ($users === []): ?>
       <p class="cabinet-muted-text">Пользователи не найдены.</p>
       <?php else: ?>
-      <div class="admin-user-list">
+      <div class="admin-user-toolbar">
+        <label class="form-label admin-user-search">
+          <span>Поиск пользователя</span>
+          <input
+            type="search"
+            class="form-input"
+            data-admin-user-filter
+            placeholder="Имя, email, роль или группа..."
+            autocomplete="off"
+          >
+        </label>
+      </div>
+      <p class="cabinet-muted-text admin-user-filter-empty" data-admin-user-empty hidden>Никого не найдено. Попробуйте другой запрос.</p>
+      <div class="admin-user-list" data-admin-user-list>
         <?php foreach ($users as $u):
             $isSelf = (int) $u['id'] === (int) $user['id'];
             $assignedGroups = array_values(array_filter(
                 $groups,
                 static fn (array $g): bool => in_array((int) $g['id'], $u['group_ids'], true)
             ));
+            $searchBlob = mb_strtolower(trim(
+                $u['name'] . ' '
+                . $u['email'] . ' '
+                . mb_role_label($u['role']) . ' '
+                . implode(' ', array_map(static fn (array $g): string => $g['name'], $assignedGroups))
+            ), 'UTF-8');
             ?>
-        <article class="admin-user-card<?= $isSelf ? ' is-self' : '' ?>">
+        <article class="admin-user-card<?= $isSelf ? ' is-self' : '' ?>" data-admin-user-search="<?= mb_h($searchBlob) ?>">
           <form class="admin-user-card__form cabinet-form" method="post">
             <input type="hidden" name="_csrf" value="<?= mb_h(mb_csrf_token()) ?>">
             <input type="hidden" name="user_id" value="<?= (int) $u['id'] ?>">
