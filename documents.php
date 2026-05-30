@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && mb_can_write()) {
         if (isset($res['error'])) {
             $error = $res['error'];
         } else {
-            $success = 'Файл сохранён на сервере в storage/documents/.';
+            $success = 'Документ загружен.';
         }
     }
 }
@@ -54,7 +54,6 @@ mb_cabinet_header_render($user, 'Поиск...');
 mb_cabinet_sidebar_open('documents', '', 'cabinet-main--wide');
 ?>
       <h1 class="cabinet-page-title">Документы</h1>
-      <p class="cabinet-page-lead">Файлы хранятся на сервере в папке <code class="inline-code">storage/documents/</code> — скачивание и загрузка работают с диска.</p>
       <?php if ($success): ?><p class="auth-alert auth-alert--success"><?= mb_h($success) ?></p><?php endif; ?>
       <?php if ($error): ?><p class="auth-alert auth-alert--error"><?= mb_h($error) ?></p><?php endif; ?>
 

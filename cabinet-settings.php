@@ -43,7 +43,7 @@ mb_cabinet_sidebar_open('settings');
 
       <h2 class="cabinet-section-heading">Экспорт базы знаний</h2>
       <div class="cabinet-panel">
-        <p class="cabinet-muted-text" style="margin-bottom: 16px;">Выгрузите все статьи из базы.</p>
+        <p class="cabinet-muted-text" style="margin-bottom: 16px;">Выгрузите статьи из разделов, к которым у вас есть доступ.</p>
         <div class="cabinet-inline-btns">
           <a href="export.php?format=md" class="btn btn-outline">Скачать Markdown</a>
           <a href="export.php?format=html" class="btn btn-outline">Скачать HTML</a>

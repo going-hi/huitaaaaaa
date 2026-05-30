@@ -1491,7 +1491,7 @@ function mb_export_articles(): array
 {
     $db = mb_db();
     $vis = mb_sql_category_visible('a.category_id');
-    $res = $db->query("SELECT a.id, a.title, a.slug, a.body, a.updated_at FROM articles a WHERE a.is_help = 1 OR {$vis} ORDER BY a.id");
+    $res = $db->query("SELECT a.id, a.title, a.slug, a.body, a.updated_at FROM articles a WHERE {$vis} ORDER BY a.id");
     if (!$res instanceof mysqli_result) {
         return [];
     }
