@@ -92,6 +92,51 @@ function mb_cabinet_sidebar_close(): void
     <?php
 }
 
+/**
+ * @param list<array{label:string,href?:string}> $items
+ */
+function mb_cabinet_breadcrumbs_render(array $items): void
+{
+    if ($items === []) {
+        return;
+    }
+    ?>
+      <nav class="cabinet-breadcrumb" aria-label="Навигация">
+        <?php foreach ($items as $i => $item):
+            if ($i > 0): ?>
+        <span class="cabinet-breadcrumb-sep" aria-hidden="true">/</span>
+            <?php endif;
+            $href = $item['href'] ?? null;
+            if ($href !== null && $href !== ''): ?>
+        <a class="cabinet-breadcrumb-link" href="<?= mb_h($href) ?>"><?= mb_h($item['label']) ?></a>
+            <?php else: ?>
+        <span class="cabinet-breadcrumb-current" aria-current="page"><?= mb_h($item['label']) ?></span>
+            <?php endif;
+        endforeach; ?>
+      </nav>
+    <?php
+}
+
+/**
+ * @param list<array{name:string,slug:string}> $categories
+ */
+function mb_cabinet_catalog_breadcrumbs(array $categories, ?string $currentLabel = null): void
+{
+    $items = [['label' => 'Каталог', 'href' => 'knowledge-catalog.php']];
+    $last = count($categories) - 1;
+    foreach ($categories as $i => $cat) {
+        $item = ['label' => $cat['name']];
+        if ($i !== $last || $currentLabel !== null) {
+            $item['href'] = 'category.php?slug=' . rawurlencode($cat['slug']);
+        }
+        $items[] = $item;
+    }
+    if ($currentLabel !== null) {
+        $items[] = ['label' => $currentLabel];
+    }
+    mb_cabinet_breadcrumbs_render($items);
+}
+
 function mb_cabinet_head(string $title): void
 {
     ?>

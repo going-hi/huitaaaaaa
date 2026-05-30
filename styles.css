@@ -1270,9 +1270,9 @@ body {
 .cabinet-sidebar {
   width: 260px;
   flex-shrink: 0;
-  padding: 24px 0;
+  padding: 20px 0 24px;
   border-right: 1px solid var(--border);
-  background: var(--bg-elevated);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, transparent 120px), var(--bg-elevated);
 }
 
 .cabinet-sidebar-head {
@@ -1290,27 +1290,47 @@ body {
 .cabinet-nav {
   display: flex;
   flex-direction: column;
+  gap: 2px;
+  padding: 0 12px 12px;
 }
 
 .cabinet-nav-item {
-  display: block;
-  padding: 10px 20px;
-  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  font-size: 0.92rem;
   color: var(--text-muted);
   text-decoration: none;
-  border-left: 3px solid transparent;
-  transition: color var(--transition), background var(--transition), border-color var(--transition);
+  border-radius: var(--radius-sm);
+  border-left: none;
+  transition: color var(--transition), background var(--transition), box-shadow var(--transition);
+}
+
+.cabinet-nav-icon {
+  width: 1.25rem;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.92;
+}
+
+.cabinet-nav-text {
+  min-width: 0;
+  line-height: 1.35;
 }
 
 .cabinet-nav-item:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .cabinet-nav-item.active {
   color: var(--accent);
-  border-left-color: var(--accent);
   background: var(--accent-soft);
+  font-weight: 500;
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .cabinet-main {
@@ -1409,22 +1429,28 @@ body {
 }
 
 .cabinet-nav-label {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: var(--text-muted);
-  padding: 16px 20px 8px;
-  opacity: 0.85;
+  padding: 16px 8px 8px;
+  opacity: 0.75;
 }
 
 .cabinet-nav-label:first-child {
   padding-top: 0;
 }
 
+.cabinet-nav-label:not(:first-child) {
+  margin-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 18px;
+}
+
 .cabinet-nav-item--sub {
-  padding-left: 28px;
-  font-size: 0.9rem;
+  padding-left: 36px;
+  font-size: 0.88rem;
 }
 
 .cabinet-nav-item--sub.active {
@@ -2191,18 +2217,25 @@ td.cabinet-table-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px 8px;
   font-size: 0.875rem;
   color: var(--text-muted);
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
+.cabinet-breadcrumb-link,
 .cabinet-breadcrumb a,
 .cabinet-breadcrumb a:visited {
   color: var(--accent) !important;
   text-decoration: none !important;
+  transition: color var(--transition);
 }
 
+.cabinet-breadcrumb-link:hover,
 .cabinet-breadcrumb a:hover {
   color: var(--text) !important;
 }
@@ -2264,9 +2297,9 @@ td.cabinet-table-actions {
 }
 
 .section-tree--nested {
-  margin: 2px 0 6px 12px;
-  padding-left: 12px;
-  border-left: 2px solid rgba(34, 211, 238, 0.2);
+  margin: 4px 0 8px 10px;
+  padding-left: 14px;
+  border-left: 2px solid rgba(34, 211, 238, 0.18);
 }
 
 .section-tree__item {
@@ -2278,11 +2311,11 @@ td.cabinet-table-actions {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 14px;
+  padding: 9px 12px;
   border-radius: var(--radius-sm);
   color: var(--text) !important;
   text-decoration: none !important;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   font-weight: 500;
   transition: background var(--transition), color var(--transition);
 }
@@ -2295,6 +2328,7 @@ td.cabinet-table-actions {
 .section-tree__link.is-active {
   color: var(--accent) !important;
   background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .section-tree__label {
@@ -2495,11 +2529,17 @@ td.cabinet-table-actions {
 
 .cabinet-breadcrumb-current {
   color: var(--text);
+  font-weight: 500;
+  max-width: min(100%, 320px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cabinet-breadcrumb-sep {
   color: var(--text-muted);
-  opacity: 0.6;
+  opacity: 0.45;
+  user-select: none;
 }
 
 .cabinet-search-result-title.cabinet-table-link {

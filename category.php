@@ -28,11 +28,7 @@ mb_cabinet_head($category['name']);
 mb_cabinet_header_render($user, 'Поиск...');
 mb_cabinet_sidebar_open('catalog', '', 'cabinet-main--wide');
 ?>
-      <nav class="cabinet-breadcrumb">
-        <a href="knowledge-catalog.php">Каталог</a>
-        <span class="cabinet-breadcrumb-sep">/</span>
-        <span class="cabinet-breadcrumb-current"><?= mb_h($category['name']) ?></span>
-      </nav>
+      <?php mb_cabinet_catalog_breadcrumbs(mb_category_ancestors((int) $category['id'])); ?>
 
       <h1 class="cabinet-page-title"><?= mb_h($category['icon']) ?> <?= mb_h($category['name']) ?></h1>
       <?php if ($category['description'] !== ''): ?>

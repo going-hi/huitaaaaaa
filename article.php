@@ -30,11 +30,7 @@ mb_cabinet_head($article['title']);
 mb_cabinet_header_render($user, 'Поиск по базе...');
 mb_cabinet_sidebar_open('catalog', '', 'cabinet-main--article');
 ?>
-      <nav class="cabinet-breadcrumb">
-        <a href="knowledge-catalog.php">Каталог</a>
-        <span>/</span>
-        <a href="category.php?slug=<?= rawurlencode($article['category_slug']) ?>"><?= mb_h($article['category_name']) ?></a>
-      </nav>
+      <?php mb_cabinet_catalog_breadcrumbs(mb_category_ancestors((int) $article['category_id']), $article['title']); ?>
       <article class="cabinet-article is-visible">
       <h1><?= mb_h($article['title']) ?></h1>
       <p class="cabinet-article-meta">

@@ -367,6 +367,26 @@ function mb_category_by_slug(string $slug): ?array
     ];
 }
 
+/** @return list<array{name:string,slug:string}> */
+function mb_category_ancestors(int $categoryId): array
+{
+    $chain = [];
+    $currentId = $categoryId;
+    while ($currentId > 0) {
+        $cat = mb_category_by_id($currentId);
+        if ($cat === null || $cat['slug'] === 'help') {
+            break;
+        }
+        array_unshift($chain, [
+            'name' => $cat['name'],
+            'slug' => $cat['slug'],
+        ]);
+        $currentId = $cat['parent_id'] ?? 0;
+    }
+
+    return $chain;
+}
+
 /** @return list<array<string,mixed>> */
 function mb_categories_list_all(?int $parentId = null): array
 {
