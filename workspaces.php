@@ -40,7 +40,7 @@ $list = mb_workspaces_for_user((int) $user['id']);
 
 mb_cabinet_head('Мои базы знаний');
 mb_cabinet_header_render($user, 'Поиск...');
-mb_cabinet_sidebar_open('overview');
+mb_cabinet_sidebar_open('workspaces');
 ?>
       <h1 class="cabinet-page-title">Мои базы знаний</h1>
       <p class="cabinet-page-lead">У каждой команды или проекта — отдельная база. Создайте свою или попросите администратора добавить вас по email.</p>
@@ -52,22 +52,36 @@ mb_cabinet_sidebar_open('overview');
       <?php endif; ?>
 
       <?php if ($list !== []): ?>
+      <?php $currentWsId = mb_workspace_current_id(); ?>
       <h2 class="cabinet-section-heading">Ваши базы</h2>
-      <div class="cabinet-panel">
-        <ul class="cabinet-feed">
-          <?php foreach ($list as $ws): ?>
-          <li class="cabinet-feed-item cabinet-feed-item--row">
-            <form method="post" action="workspaces.php" class="cabinet-inline-form">
-              <input type="hidden" name="_csrf" value="<?= mb_h(mb_csrf_token()) ?>">
-              <input type="hidden" name="switch_workspace_id" value="<?= (int) $ws['id'] ?>">
-              <button type="submit" class="cabinet-table-link cabinet-table-link--button"><?= mb_h($ws['title']) ?></button>
-            </form>
-            <?php $appRole = mb_workspace_role_to_app($ws['role']); ?>
-            <span class="<?= mb_h(mb_role_badge_class($appRole)) ?>"><?= mb_h(mb_role_label($appRole)) ?></span>
-          </li>
-          <?php endforeach; ?>
-        </ul>
-      </div>
+      <p class="cabinet-muted-text workspace-list-hint">Выберите базу и нажмите «Открыть», чтобы перейти в каталог и кабинет.</p>
+      <ul class="workspace-list">
+        <?php foreach ($list as $ws):
+            $appRole = mb_workspace_role_to_app($ws['role']);
+            $isCurrent = $currentWsId !== null && (int) $ws['id'] === $currentWsId;
+            ?>
+        <li class="workspace-card<?= $isCurrent ? ' is-current' : '' ?>">
+          <div class="workspace-card__main">
+            <p class="workspace-card__title"><?= mb_h($ws['title']) ?></p>
+            <div class="workspace-card__meta">
+              <span class="<?= mb_h(mb_role_badge_class($appRole)) ?>"><?= mb_h(mb_role_label($appRole)) ?></span>
+              <?php if ($isCurrent): ?>
+              <span class="workspace-card__status">Сейчас открыта</span>
+              <?php endif; ?>
+            </div>
+          </div>
+          <?php if ($isCurrent): ?>
+          <a href="cabinet.php" class="btn btn-outline btn-sm workspace-card__btn">В кабинет</a>
+          <?php else: ?>
+          <form method="post" action="workspaces.php" class="workspace-card__action">
+            <input type="hidden" name="_csrf" value="<?= mb_h(mb_csrf_token()) ?>">
+            <input type="hidden" name="switch_workspace_id" value="<?= (int) $ws['id'] ?>">
+            <button type="submit" class="btn btn-primary btn-sm workspace-card__btn">Открыть</button>
+          </form>
+          <?php endif; ?>
+        </li>
+        <?php endforeach; ?>
+      </ul>
       <?php endif; ?>
 
       <h2 class="cabinet-section-heading">Создать новую базу</h2>
@@ -86,4 +100,4 @@ mb_cabinet_sidebar_open('overview');
       </div>
 <?php
 mb_cabinet_sidebar_close();
-mb_cabinet_foot('overview');
+mb_cabinet_foot('workspaces');

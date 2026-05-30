@@ -1889,8 +1889,27 @@ td.cabinet-table-actions {
 }
 
 .btn-danger {
-  border-color: rgba(248, 113, 113, 0.45) !important;
+  border-color: rgba(248, 113, 113, 0.55) !important;
+  color: #fecaca !important;
+  background: rgba(127, 29, 29, 0.55) !important;
+}
+
+.btn-danger:hover {
+  border-color: rgba(252, 165, 165, 0.85) !important;
+  color: #fff !important;
+  background: rgba(185, 28, 28, 0.72) !important;
+}
+
+.btn-danger--soft {
+  border-color: rgba(248, 113, 113, 0.35) !important;
   color: #fca5a5 !important;
+  background: transparent !important;
+}
+
+.btn-danger--soft:hover {
+  border-color: rgba(248, 113, 113, 0.65) !important;
+  color: #fecaca !important;
+  background: rgba(127, 29, 29, 0.35) !important;
 }
 
 .cabinet-danger-form {
@@ -2177,6 +2196,77 @@ td.cabinet-table-actions {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
   border-radius: 4px;
+}
+
+.workspace-list-hint {
+  margin: -8px 0 16px;
+}
+
+.workspace-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.workspace-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.workspace-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.workspace-card.is-current {
+  border-color: rgba(34, 211, 238, 0.35);
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.06) 0%, var(--bg-card) 60%);
+}
+
+.workspace-card__main {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.workspace-card__title {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.workspace-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.workspace-card__status {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+
+.workspace-card__action {
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.workspace-card__btn {
+  min-width: 112px;
 }
 
 /* ===== Страницы платформы (каталог, обучение, документы) ===== */

@@ -188,7 +188,7 @@ mb_cabinet_sidebar_open('admin-users');
             <input type="hidden" name="user_id" value="<?= (int) $u['id'] ?>">
             <input type="hidden" name="remove_member" value="1">
             <input type="hidden" name="q" value="<?= mb_h($filterRaw) ?>">
-            <button type="submit" class="btn btn-danger btn-sm">Удалить из базы</button>
+            <button type="submit" class="btn btn-danger btn-danger--soft btn-sm">Удалить из базы</button>
           </form>
           <?php endif; ?>
         </article>

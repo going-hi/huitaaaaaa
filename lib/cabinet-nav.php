@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/roles.php';
 
 /**
- * @param 'catalog'|'learning'|'documents'|'overview'|'profile'|'settings'|'admin-users'|'admin-access' $active
+ * @param 'catalog'|'learning'|'documents'|'overview'|'workspaces'|'profile'|'settings'|'admin-users'|'admin-access' $active
  */
 function mb_cabinet_nav_class(string $active, string $key): string
 {
@@ -15,7 +15,7 @@ function mb_cabinet_nav_class(string $active, string $key): string
 /**
  * Боковое меню кабинета. $suffix — дополнительные пункты перед закрывающим тегом nav.
  *
- * @param 'catalog'|'learning'|'documents'|'overview'|'profile'|'settings'|'admin-users'|'admin-access' $active
+ * @param 'catalog'|'learning'|'documents'|'overview'|'workspaces'|'profile'|'settings'|'admin-users'|'admin-access' $active
  */
 function mb_cabinet_nav_render(string $active, string $suffix = ''): void
 {
@@ -30,10 +30,10 @@ function mb_cabinet_nav_render(string $active, string $suffix = ''): void
         <a href="documents.php" class="<?= $c('documents') ?>">Документы</a>
         <p class="cabinet-nav-label">Личный кабинет</p>
         <a href="cabinet.php" class="<?= $c('overview') ?>">Личный кабинет</a>
+        <a href="workspaces.php" class="<?= $c('workspaces') ?>">Мои базы</a>
         <p class="cabinet-nav-label">Аккаунт</p>
         <a href="cabinet-profile.php" class="<?= $c('profile') ?>">Профиль</a>
         <a href="cabinet-settings.php" class="<?= $c('settings') ?>">Настройки</a>
-        <a href="workspaces.php" class="cabinet-nav-item">Мои базы</a>
         <?php if (mb_is_admin()): ?>
         <p class="cabinet-nav-label">Администрирование</p>
         <a href="admin-users.php" class="<?= $c('admin-users') ?>">Пользователи</a>
