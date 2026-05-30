@@ -1495,7 +1495,21 @@ select.form-input {
 }
 
 .cabinet-dashboard .cabinet-section-heading:first-of-type {
-  margin-top: 8px;
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+.cabinet-dashboard .cabinet-stats-grid {
+  margin-bottom: 36px;
+}
+
+.cabinet-dashboard .cabinet-feed--compact {
+  margin-bottom: 40px;
+}
+
+.cabinet-dashboard .cabinet-feed-item {
+  padding: 16px 0;
+  gap: 6px;
 }
 
 .cabinet-stats-grid {
