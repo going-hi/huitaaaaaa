@@ -86,7 +86,6 @@ mb_cabinet_sidebar_open('admin-access');
             <?php else: ?>
             <p class="access-group-card__desc access-group-card__desc--empty">Без описания</p>
             <?php endif; ?>
-            <p class="access-group-card__meta"><code class="inline-code"><?= mb_h($g['slug']) ?></code></p>
           </div>
           <div class="access-group-card__actions">
             <a href="admin-access.php?edit=<?= (int) $g['id'] ?>" class="btn btn-outline btn-sm">Изменить</a>
