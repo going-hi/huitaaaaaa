@@ -33,7 +33,7 @@ $groups = mb_access_groups_list();
 
 mb_cabinet_head('Пользователи');
 mb_cabinet_header_render($user, 'Поиск...', false);
-mb_cabinet_sidebar_open('settings');
+mb_cabinet_sidebar_open('admin-users');
 ?>
       <h1 class="cabinet-page-title">Пользователи и роли</h1>
       <p class="cabinet-page-lead">Администратор — полный доступ. Редактор — статьи и разделы. Пользователь — только чтение и скачивание.</p>
@@ -72,5 +72,5 @@ mb_cabinet_sidebar_open('settings');
       <?php endforeach; ?>
 <?php
 mb_cabinet_sidebar_close();
-mb_cabinet_foot('settings');
+mb_cabinet_foot('admin-users');
 ?>

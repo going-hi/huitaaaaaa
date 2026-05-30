@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/roles.php';
 
 /**
- * @param 'catalog'|'learning'|'documents'|'overview'|'profile'|'settings' $active
+ * @param 'catalog'|'learning'|'documents'|'overview'|'profile'|'settings'|'admin-users'|'admin-access' $active
  */
 function mb_cabinet_nav_class(string $active, string $key): string
 {
@@ -15,7 +15,7 @@ function mb_cabinet_nav_class(string $active, string $key): string
 /**
  * Боковое меню кабинета. $suffix — дополнительные пункты перед закрывающим тегом nav.
  *
- * @param 'catalog'|'learning'|'documents'|'overview'|'profile'|'settings' $active
+ * @param 'catalog'|'learning'|'documents'|'overview'|'profile'|'settings'|'admin-users'|'admin-access' $active
  */
 function mb_cabinet_nav_render(string $active, string $suffix = ''): void
 {
@@ -35,8 +35,8 @@ function mb_cabinet_nav_render(string $active, string $suffix = ''): void
         <a href="cabinet-settings.php" class="<?= $c('settings') ?>">Настройки</a>
         <?php if (mb_is_admin()): ?>
         <p class="cabinet-nav-label">Администрирование</p>
-        <a href="admin-users.php" class="cabinet-nav-item">Пользователи</a>
-        <a href="admin-access.php" class="cabinet-nav-item">Группы доступа</a>
+        <a href="admin-users.php" class="<?= $c('admin-users') ?>">Пользователи</a>
+        <a href="admin-access.php" class="<?= $c('admin-access') ?>">Группы доступа</a>
         <?php endif; ?>
         <?= $suffix ?>
       </nav>
