@@ -11,6 +11,23 @@ docker compose exec php php database/seed.php
 
 Откройте http://localhost:8080
 
+### SEO и продвижение
+
+Для production задайте публичный URL сайта:
+
+```bash
+MB_SITE_URL=https://your-domain.ru
+```
+
+В Docker добавьте переменную в сервис `php` в `docker-compose.yml`.
+
+Публичные SEO-файлы:
+
+- `/robots.txt` — правила индексации (закрывает личный кабинет и админку)
+- `/sitemap.xml` — карта публичных страниц (главная, регистрация)
+
+На главной: meta description, Open Graph, Twitter Cards, JSON-LD (Organization, WebSite, SoftwareApplication, FAQPage).
+
 **Учётки:**
 
 | Email | Пароль | Роль |

@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/lib/bootstrap.php';
 require_once __DIR__ . '/lib/security.php';
 require_once __DIR__ . '/lib/auth.php';
+require_once __DIR__ . '/lib/seo.php';
 
 if (mb_current_user() !== null) {
     header('Location: cabinet.php', true, 302);
@@ -50,7 +51,15 @@ $oldEmail = mb_flash_take('register_email') ?? '';
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Регистрация — MindBase</title>
+<?php
+mb_seo_render_head([
+    'title' => 'Регистрация — создать бесплатную базу знаний MindBase',
+    'description' => 'Зарегистрируйтесь в MindBase за минуту и создайте бесплатную корпоративную базу знаний для команды: статьи, разделы, поиск и доступы.',
+    'path' => 'register.php',
+    'robots' => 'index, follow',
+]);
+?>
+  <link rel="icon" href="logo.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
