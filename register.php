@@ -59,7 +59,7 @@ mb_seo_render_head([
     'robots' => 'index, follow',
 ]);
 ?>
-  <link rel="icon" href="logo.png" type="image/png">
+  <?php mb_seo_render_favicons(); ?>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -71,7 +71,7 @@ mb_seo_render_head([
   <header class="header header-auth">
     <nav class="nav container">
       <a href="index.php" class="logo">
-        <img src="logo.png" alt="MindBase" class="logo-img">
+        <img src="logo-icon.png" alt="MindBase" class="logo-img">
         <span>MindBase</span>
       </a>
       <a href="index.php" class="btn btn-ghost">На главную</a>

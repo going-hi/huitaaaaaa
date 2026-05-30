@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/roles.php';
+require_once __DIR__ . '/seo.php';
 
 /**
  * @param array{id:int,name:string,email:string,role?:string} $user
@@ -17,7 +18,7 @@ function mb_cabinet_header_render(array $user, string $searchPlaceholder = 'По
         <span></span><span></span><span></span>
       </button>
       <a href="index.php" class="logo">
-        <img src="logo.png" alt="" class="logo-img">
+        <img src="logo-icon.png" alt="MindBase" class="logo-img" width="32" height="32">
         <span>MindBase</span>
       </a>
       <form class="<?= $searchClass ?>" action="search.php" method="get" role="search">
@@ -146,6 +147,7 @@ function mb_cabinet_head(string $title): void
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title><?= mb_h($title) ?> — MindBase</title>
+  <?php mb_seo_render_favicons(); ?>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">

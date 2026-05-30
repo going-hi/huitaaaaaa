@@ -33,6 +33,13 @@ function mb_seo_absolute_url(string $path = '/'): string
     return mb_site_base_url() . '/' . ltrim($path, '/');
 }
 
+function mb_seo_render_favicons(): void
+{
+    echo '  <link rel="icon" href="favicon.ico" sizes="any">' . "\n";
+    echo '  <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">' . "\n";
+    echo '  <link rel="apple-touch-icon" href="apple-touch-icon.png">' . "\n";
+}
+
 /**
  * @param array{
  *   title: string,
@@ -57,7 +64,7 @@ function mb_seo_render_head(array $config): void
     $canonical = mb_seo_absolute_url($path);
     $image = isset($config['image']) && $config['image'] !== ''
         ? mb_seo_absolute_url($config['image'])
-        : mb_seo_absolute_url('logo.png');
+        : mb_seo_absolute_url('og-image.png');
 
     echo '  <title>' . mb_h($title) . "</title>\n";
     echo '  <meta name="description" content="' . mb_h($description) . "\">\n";
@@ -123,7 +130,7 @@ function mb_seo_landing_json_ld(string $pageUrl, array $faqItems): array
             'name' => 'MindBase',
             'legalName' => 'ООО «Инним»',
             'url' => $pageUrl,
-            'logo' => mb_seo_absolute_url('logo.png'),
+            'logo' => mb_seo_absolute_url('logo-icon.png'),
             'description' => 'Разработчик бесплатной платформы корпоративной базы знаний MindBase для команд и компаний.',
             'sameAs' => [],
         ],

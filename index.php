@@ -57,12 +57,11 @@ mb_seo_render_head([
     'description' => $seoDescription,
     'keywords' => $seoKeywords,
     'path' => '/',
-    'image' => 'logo.png',
+    'image' => 'og-image.png',
     'json_ld' => mb_seo_landing_json_ld($pageUrl, $faqItems),
 ]);
 ?>
-  <link rel="icon" href="logo.png" type="image/png">
-  <link rel="apple-touch-icon" href="logo.png">
+  <?php mb_seo_render_favicons(); ?>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -75,7 +74,7 @@ mb_seo_render_head([
   <header class="header">
     <nav class="nav container" aria-label="Основная навигация">
       <a href="index.php" class="logo" aria-label="MindBase — на главную">
-        <img src="logo.png" alt="Логотип MindBase" class="logo-img" width="36" height="36">
+        <img src="logo-icon.png" alt="Логотип MindBase" class="logo-img" width="36" height="36">
         <span>MindBase</span>
       </a>
       <ul class="nav-links">
@@ -328,7 +327,7 @@ mb_seo_render_head([
     <div class="container footer-inner">
       <div class="footer-brand">
         <a href="index.php" class="logo" aria-label="MindBase — на главную">
-          <img src="logo.png" alt="Логотип MindBase" class="logo-img" width="36" height="36" loading="lazy">
+          <img src="logo-icon.png" alt="Логотип MindBase" class="logo-img" width="36" height="36" loading="lazy">
           MindBase
         </a>
         <p>Бесплатная платформа базы знаний для команд. Разработано ООО «Инним».</p>
