@@ -34,33 +34,4 @@
       }
     });
   });
-
-  var userList = document.querySelector('[data-admin-user-list]');
-  var userFilter = document.querySelector('[data-admin-user-filter]');
-  if (userList && userFilter) {
-    var userEmpty = document.querySelector('[data-admin-user-empty]');
-    var userCount = document.querySelector('[data-admin-user-visible-count]');
-    var userCards = userList.querySelectorAll('[data-admin-user-search]');
-
-    function filterUsers() {
-      var q = userFilter.value.trim().toLowerCase();
-      var visible = 0;
-      userCards.forEach(function (card) {
-        var haystack = card.getAttribute('data-admin-user-search') || '';
-        var match = q === '' || haystack.indexOf(q) !== -1;
-        card.hidden = !match;
-        if (match) {
-          visible += 1;
-        }
-      });
-      if (userEmpty) {
-        userEmpty.hidden = visible > 0;
-      }
-      if (userCount) {
-        userCount.textContent = String(visible);
-      }
-    }
-
-    userFilter.addEventListener('input', filterUsers);
-  }
 })();

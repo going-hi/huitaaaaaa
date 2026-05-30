@@ -30,6 +30,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && mb_csrf_validate(isset($_POST['_csr
 
 $users = mb_users_list();
 $groups = mb_access_groups_list();
+$filterQ = mb_strtolower(trim((string) ($_GET['q'] ?? '')), 'UTF-8');
+
+$adminUserSearchBlob = static function (array $u, array $groups): string {
+    $assignedGroups = array_values(array_filter(
+        $groups,
+        static fn (array $g): bool => in_array((int) $g['id'], $u['group_ids'], true)
+    ));
+
+    return mb_strtolower(trim(
+        $u['name'] . ' '
+        . $u['email'] . ' '
+        . mb_role_label($u['role']) . ' '
+        . implode(' ', array_map(static fn (array $g): string => $g['name'], $assignedGroups))
+    ), 'UTF-8');
+};
+
+$visibleUserCount = count(array_filter(
+    $users,
+    static fn (array $u): bool => $filterQ === '' || mb_strpos($adminUserSearchBlob($u, $groups), $filterQ) !== false
+));
 
 mb_cabinet_head('Пользователи');
 mb_cabinet_header_render($user, 'Поиск...', false);
@@ -48,7 +68,7 @@ mb_cabinet_sidebar_open('admin-users');
 
       <h2 class="cabinet-section-heading">
         Список пользователей
-        <span class="cabinet-section-count" data-admin-user-visible-count><?= count($users) ?></span>
+        <span class="cabinet-section-count" data-admin-user-visible-count><?= (int) $visibleUserCount ?></span>
       </h2>
       <?php if ($users === []): ?>
       <p class="cabinet-muted-text">Пользователи не найдены.</p>
@@ -58,14 +78,17 @@ mb_cabinet_sidebar_open('admin-users');
           <span>Поиск пользователя</span>
           <input
             type="search"
+            id="admin-user-filter"
+            name="q"
             class="form-input"
             data-admin-user-filter
+            value="<?= mb_h(trim((string) ($_GET['q'] ?? ''))) ?>"
             placeholder="Имя, email, роль или группа..."
             autocomplete="off"
           >
         </label>
       </div>
-      <p class="cabinet-muted-text admin-user-filter-empty" data-admin-user-empty hidden>Никого не найдено. Попробуйте другой запрос.</p>
+      <p class="cabinet-muted-text admin-user-filter-empty" data-admin-user-empty<?= $visibleUserCount === 0 && $filterQ !== '' ? '' : ' hidden' ?>>Никого не найдено. Попробуйте другой запрос.</p>
       <div class="admin-user-list" data-admin-user-list>
         <?php foreach ($users as $u):
             $isSelf = (int) $u['id'] === (int) $user['id'];
@@ -73,14 +96,10 @@ mb_cabinet_sidebar_open('admin-users');
                 $groups,
                 static fn (array $g): bool => in_array((int) $g['id'], $u['group_ids'], true)
             ));
-            $searchBlob = mb_strtolower(trim(
-                $u['name'] . ' '
-                . $u['email'] . ' '
-                . mb_role_label($u['role']) . ' '
-                . implode(' ', array_map(static fn (array $g): string => $g['name'], $assignedGroups))
-            ), 'UTF-8');
+            $searchBlob = $adminUserSearchBlob($u, $groups);
+            $isVisible = $filterQ === '' || mb_strpos($searchBlob, $filterQ) !== false;
             ?>
-        <article class="admin-user-card<?= $isSelf ? ' is-self' : '' ?>" data-admin-user-search="<?= mb_h($searchBlob) ?>">
+        <article class="admin-user-card<?= $isSelf ? ' is-self' : '' ?><?= $isVisible ? '' : ' is-filter-hidden' ?>" data-admin-user-search="<?= mb_h($searchBlob) ?>">
           <form class="admin-user-card__form cabinet-form" method="post">
             <input type="hidden" name="_csrf" value="<?= mb_h(mb_csrf_token()) ?>">
             <input type="hidden" name="user_id" value="<?= (int) $u['id'] ?>">
@@ -145,6 +164,47 @@ mb_cabinet_sidebar_open('admin-users');
       <?php endif; ?>
 
       <p class="cabinet-page-foot"><a href="admin-access.php" class="cabinet-text-link">К группам доступа →</a></p>
+      <?php if ($users !== []): ?>
+      <script>
+      (function () {
+        var input = document.getElementById('admin-user-filter');
+        var list = document.querySelector('[data-admin-user-list]');
+        if (!input || !list) {
+          return;
+        }
+        var empty = document.querySelector('[data-admin-user-empty]');
+        var count = document.querySelector('[data-admin-user-visible-count]');
+        var cards = list.querySelectorAll('.admin-user-card[data-admin-user-search]');
+
+        function normalize(value) {
+          return (value || '').replace(/\s+/g, ' ').trim().toLocaleLowerCase('ru-RU');
+        }
+
+        function applyFilter() {
+          var query = normalize(input.value);
+          var visible = 0;
+          cards.forEach(function (card) {
+            var haystack = normalize(card.getAttribute('data-admin-user-search'));
+            var match = query === '' || haystack.indexOf(query) !== -1;
+            card.classList.toggle('is-filter-hidden', !match);
+            if (match) {
+              visible += 1;
+            }
+          });
+          if (empty) {
+            empty.hidden = visible > 0;
+          }
+          if (count) {
+            count.textContent = String(visible);
+          }
+        }
+
+        input.addEventListener('input', applyFilter);
+        input.addEventListener('search', applyFilter);
+        applyFilter();
+      })();
+      </script>
+      <?php endif; ?>
 <?php
 mb_cabinet_sidebar_close();
 mb_cabinet_foot('admin-users');

@@ -161,7 +161,7 @@ function mb_cabinet_foot(string $activeNav = 'overview'): void
 {
     mb_cabinet_footer_render($activeNav);
     ?>
-  <script src="cabinet.js" defer></script>
+  <script src="cabinet.js?v=<?= (int) @filemtime(__DIR__ . '/../cabinet.js') ?>" defer></script>
 </body>
 </html>
     <?php
