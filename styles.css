@@ -2137,6 +2137,35 @@ td.cabinet-table-actions {
   gap: 12px;
 }
 
+.cabinet-inline-form {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cabinet-table-link--button {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  line-height: 1.4;
+  text-align: left;
+  max-width: 100%;
+}
+
+.cabinet-table-link--button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
 /* ===== Страницы платформы (каталог, обучение, документы) ===== */
 .cabinet-action-card--static {
   cursor: default;

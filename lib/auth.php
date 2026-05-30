@@ -213,7 +213,6 @@ function mb_current_request_allowed_page(): ?string
         'admin-users.php',
         'admin-access.php',
         'workspaces.php',
-        'join.php',
     ];
 
     return in_array($base, $allow, true) ? $base : null;

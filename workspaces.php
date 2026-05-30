@@ -33,16 +33,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && mb_csrf_validate(isset($_POST['_csr
             header('Location: cabinet.php', true, 302);
             exit;
         }
-    } elseif (isset($_POST['join_action'])) {
-        $token = trim((string) ($_POST['invite_token'] ?? ''));
-        $joinErr = mb_workspace_join_by_token((int) $user['id'], $token);
-        if ($joinErr !== null) {
-            $error = $joinErr;
-        } else {
-            mb_flash_set('cabinet_notice', 'Вы присоединились к базе знаний.');
-            header('Location: cabinet.php', true, 302);
-            exit;
-        }
     }
 }
 
@@ -53,7 +43,7 @@ mb_cabinet_header_render($user, 'Поиск...');
 mb_cabinet_sidebar_open('overview');
 ?>
       <h1 class="cabinet-page-title">Мои базы знаний</h1>
-      <p class="cabinet-page-lead">У каждой команды или проекта — отдельная база. Создайте свою или присоединитесь по приглашению.</p>
+      <p class="cabinet-page-lead">У каждой команды или проекта — отдельная база. Создайте свою или попросите администратора добавить вас по email.</p>
       <?php if ($error !== null): ?>
       <p class="auth-alert auth-alert--error"><?= mb_h($error) ?></p>
       <?php endif; ?>
@@ -66,13 +56,14 @@ mb_cabinet_sidebar_open('overview');
       <div class="cabinet-panel">
         <ul class="cabinet-feed">
           <?php foreach ($list as $ws): ?>
-          <li class="cabinet-feed-item">
+          <li class="cabinet-feed-item cabinet-feed-item--row">
             <form method="post" action="workspaces.php" class="cabinet-inline-form">
               <input type="hidden" name="_csrf" value="<?= mb_h(mb_csrf_token()) ?>">
               <input type="hidden" name="switch_workspace_id" value="<?= (int) $ws['id'] ?>">
               <button type="submit" class="cabinet-table-link cabinet-table-link--button"><?= mb_h($ws['title']) ?></button>
-              <span class="cabinet-feed-meta"><?= mb_h(mb_role_label(mb_workspace_role_to_app($ws['role']))) ?></span>
             </form>
+            <?php $appRole = mb_workspace_role_to_app($ws['role']); ?>
+            <span class="<?= mb_h(mb_role_badge_class($appRole)) ?>"><?= mb_h(mb_role_label($appRole)) ?></span>
           </li>
           <?php endforeach; ?>
         </ul>
@@ -90,21 +81,6 @@ mb_cabinet_sidebar_open('overview');
           </label>
           <div class="cabinet-form-actions">
             <button type="submit" class="btn btn-primary">Создать базу</button>
-          </div>
-        </form>
-      </div>
-
-      <h2 class="cabinet-section-heading">Присоединиться по приглашению</h2>
-      <div class="cabinet-panel">
-        <form class="cabinet-form" method="post" action="workspaces.php">
-          <input type="hidden" name="_csrf" value="<?= mb_h(mb_csrf_token()) ?>">
-          <input type="hidden" name="join_action" value="1">
-          <label class="form-label">
-            <span>Код или ссылка</span>
-            <input type="text" name="invite_token" class="form-input" placeholder="Вставьте ссылку join.php?token=... или код" required>
-          </label>
-          <div class="cabinet-form-actions">
-            <button type="submit" class="btn btn-outline">Присоединиться</button>
           </div>
         </form>
       </div>

@@ -324,42 +324,6 @@ function mb_workspace_add_member(int $workspaceId, int $userId, string $role = M
     return $ok ? null : 'Ошибка добавления.';
 }
 
-function mb_workspace_join_by_token(int $userId, string $token): ?string
-{
-    $token = trim($token);
-    if (preg_match('/token=([a-f0-9]+)/i', $token, $m)) {
-        $token = $m[1];
-    }
-    if ($token === '') {
-        return 'Укажите код приглашения.';
-    }
-    $db = mb_db();
-    $stmt = $db->prepare('SELECT id FROM workspaces WHERE invite_token = ? LIMIT 1');
-    if ($stmt === false) {
-        return 'Ошибка сервера.';
-    }
-    $stmt->bind_param('s', $token);
-    $stmt->execute();
-    $row = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-    if ($row === null) {
-        return 'Приглашение не найдено или ссылка устарела.';
-    }
-    $wsId = (int) $row['id'];
-    if (mb_workspace_user_is_member($wsId, $userId)) {
-        mb_workspace_set_current($wsId, $userId);
-
-        return null;
-    }
-    $err = mb_workspace_add_member($wsId, $userId, MB_WS_ROLE_MEMBER);
-    if ($err !== null) {
-        return $err;
-    }
-    mb_workspace_set_current($wsId, $userId);
-
-    return null;
-}
-
 function mb_workspace_add_member_by_email(int $workspaceId, string $email, string $role = MB_WS_ROLE_MEMBER): ?string
 {
     if (!mb_workspace_can_manage()) {
@@ -414,34 +378,6 @@ function mb_workspace_set_member_role(int $workspaceId, int $userId, string $app
     }
 
     return $ok ? null : 'Ошибка сохранения.';
-}
-
-function mb_workspace_regenerate_invite(int $workspaceId): ?string
-{
-    if (!mb_workspace_can_manage()) {
-        return null;
-    }
-    $token = mb_workspace_invite_token_generate();
-    $db = mb_db();
-    $stmt = $db->prepare('UPDATE workspaces SET invite_token = ? WHERE id = ?');
-    if ($stmt === false) {
-        return null;
-    }
-    $stmt->bind_param('si', $token, $workspaceId);
-    $stmt->execute();
-    $stmt->close();
-
-    return $token;
-}
-
-function mb_workspace_invite_url(string $token): string
-{
-    if (!function_exists('mb_site_base_url')) {
-        require_once __DIR__ . '/seo.php';
-    }
-    $base = mb_site_base_url();
-
-    return $base . '/join.php?token=' . rawurlencode($token);
 }
 
 function mb_workspace_save_title(int $workspaceId, string $title): ?string

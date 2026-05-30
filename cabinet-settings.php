@@ -15,8 +15,6 @@ $user = mb_current_user();
 $workspace = mb_workspace_get();
 $error = null;
 $success = null;
-$wsFull = mb_workspace_current();
-$inviteUrl = $wsFull !== null ? mb_workspace_invite_url($wsFull['invite_token']) : '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && mb_csrf_validate(isset($_POST['_csrf']) ? (string) $_POST['_csrf'] : null)) {
     if (isset($_POST['workspace_title'])) {
@@ -26,8 +24,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && mb_csrf_validate(isset($_POST['_csr
         } else {
             $success = 'Настройки сохранены.';
             $workspace = mb_workspace_get();
-            $wsFull = mb_workspace_current();
-            $inviteUrl = $wsFull !== null ? mb_workspace_invite_url($wsFull['invite_token']) : '';
         }
     } elseif (isset($_POST['add_member']) && mb_workspace_can_manage()) {
         $err = mb_workspace_add_member_by_email(mb_ws_id(), (string) ($_POST['member_email'] ?? ''), MB_ROLE_USER);
@@ -35,13 +31,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && mb_csrf_validate(isset($_POST['_csr
             $error = $err;
         } else {
             $success = 'Участник добавлен в базу.';
-        }
-    } elseif (isset($_POST['regenerate_invite']) && mb_workspace_can_manage()) {
-        $token = mb_workspace_regenerate_invite(mb_ws_id());
-        if ($token !== null) {
-            $success = 'Ссылка приглашения обновлена.';
-            $wsFull = mb_workspace_current();
-            $inviteUrl = $wsFull !== null ? mb_workspace_invite_url($wsFull['invite_token']) : '';
         }
     }
 }
@@ -51,7 +40,7 @@ mb_cabinet_header_render($user, 'Поиск...');
 mb_cabinet_sidebar_open('settings');
 ?>
       <h1 class="cabinet-page-title">Настройки</h1>
-      <p class="cabinet-page-lead">База: <?= mb_h($workspace['title']) ?>. Экспорт, участники и приглашения.</p>
+      <p class="cabinet-page-lead">База: <?= mb_h($workspace['title']) ?>. Экспорт и участники.</p>
       <?php if ($error !== null): ?>
       <p class="auth-alert auth-alert--error"><?= mb_h($error) ?></p>
       <?php endif; ?>
@@ -85,9 +74,9 @@ mb_cabinet_sidebar_open('settings');
       </div>
 
       <?php if (mb_workspace_can_manage()): ?>
-      <h2 class="cabinet-section-heading">Участники и приглашения</h2>
+      <h2 class="cabinet-section-heading">Участники</h2>
       <div class="cabinet-panel">
-        <p class="cabinet-muted-text">Добавьте коллегу по email (он должен быть зарегистрирован в MindBase) или отправьте ссылку-приглашение.</p>
+        <p class="cabinet-muted-text">Добавьте коллегу по email — он должен быть зарегистрирован в MindBase. После добавления база появится у него в «Мои базы».</p>
         <form class="cabinet-form" method="post" action="cabinet-settings.php" style="margin-top: 16px;">
           <input type="hidden" name="_csrf" value="<?= mb_h(mb_csrf_token()) ?>">
           <input type="hidden" name="add_member" value="1">
@@ -99,17 +88,6 @@ mb_cabinet_sidebar_open('settings');
             <button type="submit" class="btn btn-outline">Добавить в базу</button>
           </div>
         </form>
-        <?php if ($inviteUrl !== ''): ?>
-        <label class="form-label" style="margin-top: 24px;">
-          <span>Ссылка для приглашения</span>
-          <input type="text" class="form-input" readonly value="<?= mb_h($inviteUrl) ?>" onclick="this.select()">
-        </label>
-        <form method="post" action="cabinet-settings.php" style="margin-top: 12px;">
-          <input type="hidden" name="_csrf" value="<?= mb_h(mb_csrf_token()) ?>">
-          <input type="hidden" name="regenerate_invite" value="1">
-          <button type="submit" class="btn btn-ghost btn-sm">Обновить ссылку</button>
-        </form>
-        <?php endif; ?>
         <p class="cabinet-muted-text" style="margin-top: 16px;">
           <a href="admin-users.php">Управление ролями участников</a> ·
           <a href="workspaces.php">Все мои базы</a>
