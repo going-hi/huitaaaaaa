@@ -45,32 +45,63 @@ mb_cabinet_sidebar_open('admin-access');
       <p class="cabinet-page-lead">Привязывайте группы к разделам в форме редактирования раздела. Пользователь видит материалы только своих групп.</p>
       <?php if ($error): ?><p class="auth-alert auth-alert--error"><?= mb_h($error) ?></p><?php endif; ?>
       <?php if ($success): ?><p class="auth-alert auth-alert--success"><?= mb_h($success) ?></p><?php endif; ?>
+
+      <h2 class="cabinet-section-heading"><?= $editGroup ? 'Редактирование группы' : 'Новая группа' ?></h2>
       <div class="cabinet-panel">
         <form class="cabinet-form" method="post">
           <input type="hidden" name="_csrf" value="<?= mb_h(mb_csrf_token()) ?>">
           <?php if ($editGroup): ?><input type="hidden" name="group_id" value="<?= (int) $editGroup['id'] ?>"><?php endif; ?>
-          <label class="form-label"><span>Название</span><input type="text" name="name" class="form-input" required value="<?= mb_h($editGroup['name'] ?? '') ?>"></label>
-          <label class="form-label"><span>Описание</span><input type="text" name="description" class="form-input" value="<?= mb_h($editGroup['description'] ?? '') ?>"></label>
-          <button type="submit" class="btn btn-primary"><?= $editGroup ? 'Обновить' : 'Создать группу' ?></button>
+          <div class="cabinet-form-grid">
+            <label class="form-label">
+              <span>Название</span>
+              <input type="text" name="name" class="form-input" required maxlength="255" value="<?= mb_h($editGroup['name'] ?? '') ?>">
+            </label>
+            <label class="form-label">
+              <span>Описание</span>
+              <input type="text" name="description" class="form-input" maxlength="500" value="<?= mb_h($editGroup['description'] ?? '') ?>">
+            </label>
+          </div>
+          <div class="cabinet-form-actions">
+            <button type="submit" class="btn btn-primary"><?= $editGroup ? 'Сохранить изменения' : 'Создать группу' ?></button>
+            <?php if ($editGroup): ?>
+            <a href="admin-access.php" class="btn btn-ghost">Отмена</a>
+            <?php endif; ?>
+          </div>
         </form>
       </div>
-      <ul class="cabinet-feed">
-        <?php foreach ($groups as $g): ?>
-        <li class="cabinet-feed-item cabinet-feed-item--row">
-          <span><strong><?= mb_h($g['name']) ?></strong> — <?= mb_h($g['description']) ?></span>
-          <span>
-            <a href="admin-access.php?edit=<?= (int) $g['id'] ?>" class="btn btn-ghost btn-sm">Изменить</a>
-            <form method="post" style="display:inline" onsubmit="return confirm('Удалить группу?');">
+
+      <h2 class="cabinet-section-heading">Список групп <span class="cabinet-section-count"><?= count($groups) ?></span></h2>
+      <?php if ($groups === []): ?>
+      <p class="cabinet-muted-text">Пока нет групп. Создайте первую выше.</p>
+      <?php else: ?>
+      <div class="access-group-list">
+        <?php foreach ($groups as $g):
+            $isEditing = $editId !== null && (int) $g['id'] === $editId;
+            ?>
+        <article class="access-group-card<?= $isEditing ? ' is-editing' : '' ?>">
+          <div class="access-group-card__body">
+            <h3 class="access-group-card__title"><?= mb_h($g['name']) ?></h3>
+            <?php if ($g['description'] !== ''): ?>
+            <p class="access-group-card__desc"><?= mb_h($g['description']) ?></p>
+            <?php else: ?>
+            <p class="access-group-card__desc access-group-card__desc--empty">Без описания</p>
+            <?php endif; ?>
+            <p class="access-group-card__meta"><code class="inline-code"><?= mb_h($g['slug']) ?></code></p>
+          </div>
+          <div class="access-group-card__actions">
+            <a href="admin-access.php?edit=<?= (int) $g['id'] ?>" class="btn btn-outline btn-sm">Изменить</a>
+            <form method="post" class="access-group-card__delete" onsubmit="return confirm(<?= json_encode('Удалить группу «' . $g['name'] . '»?', JSON_UNESCAPED_UNICODE) ?>);">
               <input type="hidden" name="_csrf" value="<?= mb_h(mb_csrf_token()) ?>">
               <input type="hidden" name="delete_group_id" value="<?= (int) $g['id'] ?>">
-              <button type="submit" class="btn btn-outline btn-sm">Удалить</button>
+              <button type="submit" class="btn btn-ghost btn-sm">Удалить</button>
             </form>
-          </span>
-        </li>
+          </div>
+        </article>
         <?php endforeach; ?>
-      </ul>
-      <p><a href="admin-users.php" class="btn btn-ghost">К пользователям</a></p>
+      </div>
+      <?php endif; ?>
+
+      <p class="cabinet-page-foot"><a href="admin-users.php" class="cabinet-text-link">← К пользователям</a></p>
 <?php
 mb_cabinet_sidebar_close();
 mb_cabinet_foot('admin-access');
-?>

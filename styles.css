@@ -1462,6 +1462,26 @@ body {
   color: var(--text);
 }
 
+.cabinet-section-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  padding: 2px 8px;
+  margin-left: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  vertical-align: middle;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.cabinet-page-foot {
+  margin-top: 8px;
+}
+
 .cabinet-dashboard .cabinet-section-heading:first-of-type {
   margin-top: 8px;
 }
@@ -1823,6 +1843,75 @@ td.cabinet-table-actions {
   flex-direction: column;
   gap: 4px;
   margin-bottom: 12px;
+}
+
+.access-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.access-group-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.access-group-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.access-group-card.is-editing {
+  border-color: rgba(34, 211, 238, 0.35);
+  background: var(--accent-soft);
+}
+
+.access-group-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.access-group-card__title {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.access-group-card__desc {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.access-group-card__desc--empty {
+  font-style: italic;
+  opacity: 0.75;
+}
+
+.access-group-card__meta {
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+.access-group-card__actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.access-group-card__delete {
+  margin: 0;
 }
 
 .cabinet-feed-item--row {
@@ -2808,6 +2897,16 @@ td.cabinet-table-actions {
 
   .cabinet-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .access-group-card {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .access-group-card__actions {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .cabinet-footer {
