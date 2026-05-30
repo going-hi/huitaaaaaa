@@ -58,29 +58,24 @@ mb_cabinet_sidebar_open('overview');
         <h2 class="cabinet-section-heading">Быстрые действия</h2>
         <div class="cabinet-actions-grid">
           <a href="knowledge-catalog.php" class="cabinet-action-card">
-            <span class="cabinet-action-icon">📚</span>
             <span class="cabinet-action-title">Каталог знаний</span>
             <span class="cabinet-action-desc">Разделы и темы материалов организации</span>
           </a>
           <a href="learning-materials.php" class="cabinet-action-card">
-            <span class="cabinet-action-icon">🎓</span>
             <span class="cabinet-action-title">Обучающие материалы</span>
             <span class="cabinet-action-desc">Курсы, видео и чек-листы для команды</span>
           </a>
           <a href="documents.php" class="cabinet-action-card">
-            <span class="cabinet-action-icon">📄</span>
             <span class="cabinet-action-title">Документы</span>
             <span class="cabinet-action-desc">Регламенты, шаблоны и файлы</span>
           </a>
           <?php if (mb_can_write()): ?>
           <a href="article-edit.php" class="cabinet-action-card">
-            <span class="cabinet-action-icon">✏️</span>
             <span class="cabinet-action-title">Новая статья</span>
             <span class="cabinet-action-desc">Добавить материал в каталог</span>
           </a>
           <?php endif; ?>
           <a href="cabinet-settings.php" class="cabinet-action-card">
-            <span class="cabinet-action-icon">⚙️</span>
             <span class="cabinet-action-title">Настройки</span>
             <span class="cabinet-action-desc">Экспорт данных и параметры базы</span>
           </a>
