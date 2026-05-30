@@ -6,9 +6,11 @@ require_once __DIR__ . '/lib/bootstrap.php';
 require_once __DIR__ . '/lib/security.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/knowledge.php';
+require_once __DIR__ . '/lib/roles.php';
 require_once __DIR__ . '/lib/cabinet-layout.php';
 mb_require_login();
 $user = mb_current_user();
+$canWrite = mb_can_write();
 
 $courseId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 $course = $courseId > 0 ? mb_course_by_id($courseId, $user['id']) : null;
@@ -75,11 +77,21 @@ mb_cabinet_sidebar_open('learning');
           </div>
           <span class="cabinet-course-progress-label"><?= $p >= 100 ? 'Курс завершён' : ('Прогресс ' . $p . '%') ?></span>
         </div>
+        <?php if ($canWrite): ?>
+        <p class="cabinet-page-foot" style="margin-top: 1rem;">
+          <a href="course-edit.php?id=<?= $courseId ?>" class="btn btn-outline btn-sm">Редактировать курс</a>
+        </p>
+        <?php endif; ?>
       </div>
 
       <h2 class="cabinet-section-heading">Уроки курса</h2>
       <?php if ($lessons === []): ?>
-      <p class="cabinet-muted-text">Уроки ещё не добавлены. Запустите <code class="inline-code">php database/seed.php</code>.</p>
+      <p class="cabinet-muted-text">
+        Уроков пока нет.
+        <?php if ($canWrite): ?>
+        <a href="lesson-edit.php?course_id=<?= $courseId ?>" class="cabinet-text-link">Добавить урок</a>.
+        <?php endif; ?>
+      </p>
       <?php else: ?>
       <div class="cabinet-panel cabinet-panel--table cabinet-panel--wide">
         <div class="cabinet-table-wrap">

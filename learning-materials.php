@@ -6,6 +6,7 @@ require_once __DIR__ . '/lib/bootstrap.php';
 require_once __DIR__ . '/lib/security.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/knowledge.php';
+require_once __DIR__ . '/lib/roles.php';
 require_once __DIR__ . '/lib/cabinet-layout.php';
 mb_require_login();
 $user = mb_current_user();
@@ -36,10 +37,20 @@ mb_cabinet_sidebar_open('learning', '', 'cabinet-main--wide');
       <div class="cabinet-meta-strip">
         <span class="cabinet-pill"><strong><?= (int) $stats['courses'] ?></strong> курсов</span>
         <span class="cabinet-pill cabinet-pill--accent">Средний прогресс <?= (int) $stats['avg_progress'] ?>%</span>
+        <?php if (mb_can_write()): ?>
+        <a href="course-edit.php" class="btn btn-primary btn-sm">+ Курс</a>
+        <?php endif; ?>
       </div>
 
       <?php if ($courses === []): ?>
-      <p class="cabinet-muted-text">Курсы не найдены. Запустите <code class="inline-code">php database/seed.php</code>.</p>
+      <p class="cabinet-muted-text">
+        Курсов пока нет.
+        <?php if (mb_can_write()): ?>
+        <a href="course-edit.php" class="cabinet-text-link">Создайте первый курс</a>.
+        <?php else: ?>
+        Обратитесь к редактору или администратору.
+        <?php endif; ?>
+      </p>
       <?php else: ?>
       <div class="cabinet-panel cabinet-panel--table cabinet-panel--wide">
         <div class="cabinet-table-wrap">
@@ -76,6 +87,9 @@ mb_cabinet_sidebar_open('learning', '', 'cabinet-main--wide');
                 </td>
                 <td class="col-actions" data-label="">
                   <a href="course.php?id=<?= (int) $course['id'] ?>" class="btn btn-primary btn-sm">Открыть</a>
+                  <?php if (mb_can_write()): ?>
+                  <a href="course-edit.php?id=<?= (int) $course['id'] ?>" class="btn btn-outline btn-sm">Изменить</a>
+                  <?php endif; ?>
                 </td>
               </tr>
               <?php endforeach; ?>

@@ -1475,6 +1475,299 @@ function mb_course_type_class(string $type): string
     };
 }
 
+/** @return list<string> */
+function mb_course_types(): array
+{
+    return ['video', 'doc', 'mix', 'quiz'];
+}
+
+/** @return array<string,mixed>|null */
+function mb_course_get(int $courseId): ?array
+{
+    $db = mb_db();
+    $stmt = $db->prepare(
+        'SELECT id, title, description, course_type, duration_minutes, author_label, sort_order
+        FROM courses WHERE id = ? LIMIT 1'
+    );
+    if ($stmt === false) {
+        return null;
+    }
+    $stmt->bind_param('i', $courseId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if ($row === null) {
+        return null;
+    }
+
+    return [
+        'id' => (int) $row['id'],
+        'title' => (string) $row['title'],
+        'description' => (string) $row['description'],
+        'course_type' => (string) $row['course_type'],
+        'duration_minutes' => (int) $row['duration_minutes'],
+        'author_label' => (string) $row['author_label'],
+        'sort_order' => (int) $row['sort_order'],
+    ];
+}
+
+/** @return list<array{id:int,title:string,description:string,article_slug:?string,duration_minutes:int,sort_order:int}> */
+function mb_course_lessons_admin_list(int $courseId): array
+{
+    $db = mb_db();
+    $stmt = $db->prepare(
+        'SELECT id, title, description, article_slug, duration_minutes, sort_order
+        FROM course_lessons WHERE course_id = ? ORDER BY sort_order, id'
+    );
+    if ($stmt === false) {
+        return [];
+    }
+    $stmt->bind_param('i', $courseId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $rows = [];
+    while ($row = $res->fetch_assoc()) {
+        $rows[] = [
+            'id' => (int) $row['id'],
+            'title' => (string) $row['title'],
+            'description' => (string) $row['description'],
+            'article_slug' => $row['article_slug'] !== null ? (string) $row['article_slug'] : null,
+            'duration_minutes' => (int) $row['duration_minutes'],
+            'sort_order' => (int) $row['sort_order'],
+        ];
+    }
+    $stmt->close();
+
+    return $rows;
+}
+
+/** @return array{id:int,title:string,description:string,article_slug:?string,duration_minutes:int,sort_order:int,course_id:int}|null */
+function mb_course_lesson_get(int $lessonId): ?array
+{
+    $db = mb_db();
+    $stmt = $db->prepare(
+        'SELECT id, course_id, title, description, article_slug, duration_minutes, sort_order
+        FROM course_lessons WHERE id = ? LIMIT 1'
+    );
+    if ($stmt === false) {
+        return null;
+    }
+    $stmt->bind_param('i', $lessonId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if ($row === null) {
+        return null;
+    }
+
+    return [
+        'id' => (int) $row['id'],
+        'course_id' => (int) $row['course_id'],
+        'title' => (string) $row['title'],
+        'description' => (string) $row['description'],
+        'article_slug' => $row['article_slug'] !== null ? (string) $row['article_slug'] : null,
+        'duration_minutes' => (int) $row['duration_minutes'],
+        'sort_order' => (int) $row['sort_order'],
+    ];
+}
+
+/** @return list<array{slug:string,title:string}> */
+function mb_article_slug_options(): array
+{
+    $db = mb_db();
+    $vis = mb_sql_article_catalog_visible('a.category_id');
+    $res = $db->query("SELECT a.slug, a.title FROM articles a WHERE {$vis} ORDER BY a.title");
+    if (!$res instanceof mysqli_result) {
+        return [];
+    }
+    $rows = [];
+    while ($row = $res->fetch_assoc()) {
+        $rows[] = [
+            'slug' => (string) $row['slug'],
+            'title' => (string) $row['title'],
+        ];
+    }
+    $res->free();
+
+    return $rows;
+}
+
+function mb_course_sync_duration(int $courseId): void
+{
+    $db = mb_db();
+    $stmt = $db->prepare(
+        'UPDATE courses SET duration_minutes = (
+            SELECT COALESCE(SUM(l.duration_minutes), 0) FROM course_lessons l WHERE l.course_id = ?
+        ) WHERE id = ?'
+    );
+    if ($stmt === false) {
+        return;
+    }
+    $stmt->bind_param('ii', $courseId, $courseId);
+    $stmt->execute();
+    $stmt->close();
+}
+
+function mb_course_save(
+    ?int $id,
+    string $title,
+    string $description,
+    string $courseType,
+    int $durationMinutes,
+    string $authorLabel,
+    int $sortOrder
+): array {
+    if (!mb_can_write()) {
+        return ['error' => 'Нет прав на редактирование курсов.'];
+    }
+    $title = trim($title);
+    if ($title === '') {
+        return ['error' => 'Укажите название курса.'];
+    }
+    if (!in_array($courseType, mb_course_types(), true)) {
+        $courseType = 'doc';
+    }
+    $durationMinutes = max(0, min(9999, $durationMinutes));
+    $sortOrder = max(0, $sortOrder);
+    $authorLabel = trim($authorLabel);
+    $description = trim($description);
+    $db = mb_db();
+    if ($id !== null && $id > 0) {
+        $existing = mb_course_get($id);
+        if ($existing === null) {
+            return ['error' => 'Курс не найден.'];
+        }
+        $stmt = $db->prepare(
+            'UPDATE courses SET title = ?, description = ?, course_type = ?, duration_minutes = ?, author_label = ?, sort_order = ? WHERE id = ?'
+        );
+        if ($stmt === false) {
+            return ['error' => 'Ошибка сохранения.'];
+        }
+        $stmt->bind_param('sssisii', $title, $description, $courseType, $durationMinutes, $authorLabel, $sortOrder, $id);
+        $stmt->execute();
+        $stmt->close();
+
+        return ['id' => $id];
+    }
+    $stmt = $db->prepare(
+        'INSERT INTO courses (title, description, course_type, duration_minutes, author_label, sort_order) VALUES (?, ?, ?, ?, ?, ?)'
+    );
+    if ($stmt === false) {
+        return ['error' => 'Ошибка сохранения.'];
+    }
+    $stmt->bind_param('sssisi', $title, $description, $courseType, $durationMinutes, $authorLabel, $sortOrder);
+    $stmt->execute();
+    $newId = (int) $stmt->insert_id;
+    $stmt->close();
+
+    return ['id' => $newId];
+}
+
+function mb_course_delete(int $id): ?string
+{
+    if (!mb_can_write()) {
+        return 'Нет прав на удаление курсов.';
+    }
+    if (mb_course_get($id) === null) {
+        return 'Курс не найден.';
+    }
+    $db = mb_db();
+    $stmt = $db->prepare('DELETE FROM courses WHERE id = ?');
+    if ($stmt === false) {
+        return 'Ошибка удаления.';
+    }
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $stmt->close();
+
+    return null;
+}
+
+function mb_course_lesson_save(
+    ?int $id,
+    int $courseId,
+    string $title,
+    string $description,
+    ?string $articleSlug,
+    int $durationMinutes,
+    int $sortOrder
+): array {
+    if (!mb_can_write()) {
+        return ['error' => 'Нет прав на редактирование уроков.'];
+    }
+    if (mb_course_get($courseId) === null) {
+        return ['error' => 'Курс не найден.'];
+    }
+    $title = trim($title);
+    if ($title === '') {
+        return ['error' => 'Укажите название урока.'];
+    }
+    $description = trim($description);
+    $articleSlug = $articleSlug !== null ? trim($articleSlug) : '';
+    if ($articleSlug === '') {
+        $articleSlug = null;
+    } elseif (mb_article_by_slug($articleSlug) === null) {
+        return ['error' => 'Статья с указанным slug не найдена.'];
+    }
+    $durationMinutes = max(1, min(999, $durationMinutes));
+    $sortOrder = max(0, $sortOrder);
+    $db = mb_db();
+    if ($id !== null && $id > 0) {
+        $existing = mb_course_lesson_get($id);
+        if ($existing === null || (int) $existing['course_id'] !== $courseId) {
+            return ['error' => 'Урок не найден.'];
+        }
+        $stmt = $db->prepare(
+            'UPDATE course_lessons SET title = ?, description = ?, article_slug = ?, duration_minutes = ?, sort_order = ? WHERE id = ?'
+        );
+        if ($stmt === false) {
+            return ['error' => 'Ошибка сохранения.'];
+        }
+        $stmt->bind_param('sssiii', $title, $description, $articleSlug, $durationMinutes, $sortOrder, $id);
+        $stmt->execute();
+        $stmt->close();
+        mb_course_sync_duration($courseId);
+
+        return ['id' => $id, 'course_id' => $courseId];
+    }
+    $stmt = $db->prepare(
+        'INSERT INTO course_lessons (course_id, title, description, article_slug, duration_minutes, sort_order) VALUES (?, ?, ?, ?, ?, ?)'
+    );
+    if ($stmt === false) {
+        return ['error' => 'Ошибка сохранения.'];
+    }
+    $stmt->bind_param('isssii', $courseId, $title, $description, $articleSlug, $durationMinutes, $sortOrder);
+    $stmt->execute();
+    $newId = (int) $stmt->insert_id;
+    $stmt->close();
+    mb_course_sync_duration($courseId);
+
+    return ['id' => $newId, 'course_id' => $courseId];
+}
+
+function mb_course_lesson_delete(int $id): ?string
+{
+    if (!mb_can_write()) {
+        return 'Нет прав на удаление уроков.';
+    }
+    $lesson = mb_course_lesson_get($id);
+    if ($lesson === null) {
+        return 'Урок не найден.';
+    }
+    $courseId = (int) $lesson['course_id'];
+    $db = mb_db();
+    $stmt = $db->prepare('DELETE FROM course_lessons WHERE id = ?');
+    if ($stmt === false) {
+        return 'Ошибка удаления.';
+    }
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $stmt->close();
+    mb_course_sync_duration($courseId);
+
+    return null;
+}
+
 function mb_format_duration(int $minutes): string
 {
     if ($minutes < 60) {
