@@ -52,7 +52,6 @@ function mb_login_redirect_target(?string $next): string
     $default = 'cabinet.php';
     $allow = [
         'cabinet.php',
-        'cabinet-base.php',
         'cabinet-profile.php',
         'cabinet-settings.php',
         'knowledge-catalog.php',

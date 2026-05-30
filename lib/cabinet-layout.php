@@ -34,7 +34,7 @@ function mb_cabinet_header_render(array $user, string $searchPlaceholder = 'По
 }
 
 /**
- * @param 'catalog'|'learning'|'documents'|'overview'|'base'|'profile'|'settings' $active
+ * @param 'catalog'|'learning'|'documents'|'overview'|'profile'|'settings' $active
  */
 function mb_cabinet_footer_render(string $active): void
 {
@@ -111,7 +111,7 @@ function mb_cabinet_head(string $title): void
     <?php
 }
 
-/** @param 'catalog'|'learning'|'documents'|'overview'|'base'|'profile'|'settings' $activeNav */
+/** @param 'catalog'|'learning'|'documents'|'overview'|'profile'|'settings' $activeNav */
 function mb_cabinet_foot(string $activeNav = 'overview'): void
 {
     mb_cabinet_footer_render($activeNav);

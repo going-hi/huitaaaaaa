@@ -33,8 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $title = (string) ($_POST['title'] ?? '');
         $excerpt = (string) ($_POST['excerpt'] ?? '');
         $body = (string) ($_POST['body'] ?? '');
-        $isHelp = !empty($_POST['is_help']);
-        $result = mb_article_save($postId > 0 ? $postId : null, $user['id'], $categoryId, $title, $excerpt, $body, $isHelp);
+        $result = mb_article_save($postId > 0 ? $postId : null, $user['id'], $categoryId, $title, $excerpt, $body);
         if (isset($result['error'])) {
             $error = $result['error'];
         } else {
@@ -94,10 +93,6 @@ mb_cabinet_sidebar_open('catalog');
           <label class="form-label">
             <span>Текст (Markdown)</span>
             <textarea name="body" class="form-input" rows="14" required><?= mb_h($article['body'] ?? '') ?></textarea>
-          </label>
-          <label class="form-label" style="flex-direction:row;align-items:center;gap:8px">
-            <input type="checkbox" name="is_help" value="1" <?= !empty($article['is_help']) ? 'checked' : '' ?>>
-            <span>Статья справки (раздел «Моя база»)</span>
           </label>
           <div class="cabinet-form-actions">
             <button type="submit" class="btn btn-primary">Сохранить</button>

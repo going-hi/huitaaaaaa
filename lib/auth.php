@@ -192,7 +192,6 @@ function mb_current_request_allowed_page(): ?string
     $base = basename($path);
     $allow = [
         'cabinet.php',
-        'cabinet-base.php',
         'cabinet-profile.php',
         'cabinet-settings.php',
         'knowledge-catalog.php',

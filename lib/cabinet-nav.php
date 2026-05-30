@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/roles.php';
 
 /**
- * @param 'catalog'|'learning'|'documents'|'overview'|'base'|'profile'|'settings' $active
+ * @param 'catalog'|'learning'|'documents'|'overview'|'profile'|'settings' $active
  */
 function mb_cabinet_nav_class(string $active, string $key): string
 {
@@ -13,9 +13,9 @@ function mb_cabinet_nav_class(string $active, string $key): string
 }
 
 /**
- * Боковое меню кабинета. $suffix выводится перед закрывающим тегом nav (например, подраздел «Статьи» на cabinet-base).
+ * Боковое меню кабинета. $suffix — дополнительные пункты перед закрывающим тегом nav.
  *
- * @param 'catalog'|'learning'|'documents'|'overview'|'base'|'profile'|'settings' $active
+ * @param 'catalog'|'learning'|'documents'|'overview'|'profile'|'settings' $active
  */
 function mb_cabinet_nav_render(string $active, string $suffix = ''): void
 {
@@ -30,7 +30,6 @@ function mb_cabinet_nav_render(string $active, string $suffix = ''): void
         <a href="documents.php" class="<?= $c('documents') ?>">Документы</a>
         <p class="cabinet-nav-label">Личный кабинет</p>
         <a href="cabinet.php" class="<?= $c('overview') ?>">Личный кабинет</a>
-        <a href="cabinet-base.php" class="<?= $c('base') ?>">Моя база знаний</a>
         <p class="cabinet-nav-label">Аккаунт</p>
         <a href="cabinet-profile.php" class="<?= $c('profile') ?>">Профиль</a>
         <a href="cabinet-settings.php" class="<?= $c('settings') ?>">Настройки</a>
