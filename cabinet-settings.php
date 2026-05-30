@@ -89,7 +89,7 @@ mb_cabinet_sidebar_open('settings');
           </div>
         </form>
         <p class="cabinet-muted-text" style="margin-top: 16px;">
-          <a href="admin-users.php">Управление ролями участников</a> ·
+          <a href="admin-users.php">Управление ролями и удаление участников</a> ·
           <a href="workspaces.php">Все мои базы</a>
         </p>
       </div>

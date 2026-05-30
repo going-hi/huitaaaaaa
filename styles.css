@@ -2020,6 +2020,19 @@ td.cabinet-table-actions {
   padding: 20px;
 }
 
+.admin-user-card__actions {
+  margin-bottom: 0;
+}
+
+.admin-user-card__remove {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 20px 20px;
+  border-top: 1px solid var(--border);
+  margin-top: -1px;
+  padding-top: 14px;
+}
+
 .admin-user-card__head {
   display: flex;
   align-items: flex-start;

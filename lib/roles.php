@@ -562,6 +562,15 @@ function mb_user_set_role(int $userId, string $role): ?string
     return mb_workspace_set_member_role(mb_ws_id(), $userId, $role);
 }
 
+function mb_user_remove_from_workspace(int $userId): ?string
+{
+    if (!function_exists('mb_workspace_remove_member')) {
+        require_once __DIR__ . '/workspace.php';
+    }
+
+    return mb_workspace_remove_member(mb_ws_id(), $userId);
+}
+
 /** @return list<array<string,mixed>> */
 function mb_users_list(): array
 {

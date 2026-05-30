@@ -344,6 +344,51 @@ function mb_workspace_add_member_by_email(int $workspaceId, string $email, strin
     return mb_workspace_add_member($workspaceId, (int) $user['id'], mb_app_role_to_workspace($role));
 }
 
+function mb_workspace_remove_member(int $workspaceId, int $userId): ?string
+{
+    if (!mb_workspace_can_manage()) {
+        return 'Недостаточно прав.';
+    }
+    $ws = mb_workspace_current();
+    if ($ws === null || (int) $ws['id'] !== $workspaceId) {
+        return 'База не выбрана.';
+    }
+    $cu = mb_current_user();
+    if ($cu !== null && (int) $cu['id'] === $userId) {
+        return 'Нельзя удалить себя из базы. Попросите другого администратора.';
+    }
+    if ($userId === (int) ($ws['owner_id'] ?? 0)) {
+        return 'Нельзя удалить владельца базы.';
+    }
+    $targetRole = mb_workspace_member_role($workspaceId, $userId);
+    if ($targetRole === null) {
+        return 'Пользователь не в этой базе.';
+    }
+    if ($targetRole === MB_WS_ROLE_OWNER) {
+        return 'Нельзя удалить владельца базы.';
+    }
+    $db = mb_db();
+    $stmt = $db->prepare(
+        'DELETE uag FROM user_access_groups uag
+        INNER JOIN access_groups ag ON ag.id = uag.group_id
+        WHERE uag.user_id = ? AND ag.workspace_id = ?'
+    );
+    if ($stmt !== false) {
+        $stmt->bind_param('ii', $userId, $workspaceId);
+        $stmt->execute();
+        $stmt->close();
+    }
+    $stmt = $db->prepare('DELETE FROM workspace_members WHERE workspace_id = ? AND user_id = ?');
+    if ($stmt === false) {
+        return 'Ошибка удаления.';
+    }
+    $stmt->bind_param('ii', $workspaceId, $userId);
+    $ok = $stmt->execute();
+    $stmt->close();
+
+    return $ok ? null : 'Ошибка удаления.';
+}
+
 function mb_workspace_set_member_role(int $workspaceId, int $userId, string $appRole): ?string
 {
     if (!mb_workspace_can_manage()) {
@@ -404,9 +449,11 @@ function mb_workspace_save_title(int $workspaceId, string $title): ?string
     return $ok ? null : 'Ошибка сохранения.';
 }
 
-/** @return list<array{id:int,name:string,email:string,role:string,role_title:?string,group_ids:list<int>}> */
+/** @return list<array{id:int,name:string,email:string,role:string,role_title:?string,group_ids:list<int>,is_owner:bool}> */
 function mb_workspace_members_list(int $workspaceId): array
 {
+    $ws = mb_workspace_by_id($workspaceId);
+    $ownerId = $ws !== null ? (int) $ws['owner_id'] : 0;
     $db = mb_db();
     $stmt = $db->prepare(
         'SELECT u.id, u.name, u.email, u.role_title, wm.role
@@ -432,6 +479,7 @@ function mb_workspace_members_list(int $workspaceId): array
             'role' => mb_workspace_role_to_app($wsRole),
             'role_title' => $row['role_title'] !== null ? (string) $row['role_title'] : null,
             'group_ids' => mb_user_group_ids($uid),
+            'is_owner' => $uid === $ownerId || $wsRole === MB_WS_ROLE_OWNER,
         ];
     }
     $stmt->close();

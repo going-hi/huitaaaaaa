@@ -18,7 +18,20 @@ $error = null;
 $success = mb_flash_take('cabinet_notice');
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && mb_csrf_validate(isset($_POST['_csrf']) ? (string) $_POST['_csrf'] : null)) {
     $uid = (int) ($_POST['user_id'] ?? 0);
-    if ($uid > 0) {
+    if (isset($_POST['remove_member']) && $uid > 0) {
+        $err = mb_user_remove_from_workspace($uid);
+        if ($err !== null) {
+            $error = $err;
+        } else {
+            mb_flash_set('cabinet_notice', 'Пользователь удалён из базы.');
+            $redirectUrl = 'admin-users.php';
+            if ($filterRaw !== '') {
+                $redirectUrl .= '?' . http_build_query(['q' => $filterRaw]);
+            }
+            header('Location: ' . $redirectUrl, true, 302);
+            exit;
+        }
+    } elseif ($uid > 0) {
         $role = (string) ($_POST['role'] ?? MB_ROLE_USER);
         $err = mb_user_set_role($uid, $role);
         if ($err !== null) {
@@ -64,7 +77,7 @@ mb_cabinet_header_render($user, 'Поиск...', false);
 mb_cabinet_sidebar_open('admin-users');
 ?>
       <h1 class="cabinet-page-title">Пользователи и роли</h1>
-      <p class="cabinet-page-lead">Администратор — полный доступ. Редактор — статьи и разделы. Пользователь — только чтение и скачивание.</p>
+      <p class="cabinet-page-lead">Участники текущей базы. Администратор может менять роли, группы доступа и удалять пользователей из базы.</p>
       <?php if ($error): ?><p class="auth-alert auth-alert--error"><?= mb_h($error) ?></p><?php endif; ?>
       <?php if ($success): ?><p class="auth-alert auth-alert--success"><?= mb_h($success) ?></p><?php endif; ?>
 
@@ -100,6 +113,8 @@ mb_cabinet_sidebar_open('admin-users');
       <div class="admin-user-list" data-admin-user-list>
         <?php foreach ($users as $u):
             $isSelf = (int) $u['id'] === (int) $user['id'];
+            $isOwner = !empty($u['is_owner']);
+            $canRemove = !$isSelf && !$isOwner;
             $assignedGroups = array_values(array_filter(
                 $groups,
                 static fn (array $g): bool => in_array((int) $g['id'], $u['group_ids'], true)
@@ -163,10 +178,19 @@ mb_cabinet_sidebar_open('admin-users');
               <?php endif; ?>
             </div>
 
-            <div class="cabinet-form-actions">
+            <div class="cabinet-form-actions admin-user-card__actions">
               <button type="submit" class="btn btn-primary btn-sm">Сохранить изменения</button>
             </div>
           </form>
+          <?php if ($canRemove): ?>
+          <form class="admin-user-card__remove" method="post" onsubmit="return confirm(<?= json_encode('Удалить ' . $u['name'] . ' из этой базы?', JSON_UNESCAPED_UNICODE) ?>);">
+            <input type="hidden" name="_csrf" value="<?= mb_h(mb_csrf_token()) ?>">
+            <input type="hidden" name="user_id" value="<?= (int) $u['id'] ?>">
+            <input type="hidden" name="remove_member" value="1">
+            <input type="hidden" name="q" value="<?= mb_h($filterRaw) ?>">
+            <button type="submit" class="btn btn-danger btn-sm">Удалить из базы</button>
+          </form>
+          <?php endif; ?>
         </article>
         <?php endforeach; ?>
       </div>
