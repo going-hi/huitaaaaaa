@@ -295,8 +295,9 @@ function mb_categories_list(?int $parentId = null): array
     $db = mb_db();
     $vis = mb_sql_category_visible('c.id');
     if ($parentId === null) {
+        $artVis = mb_sql_article_catalog_visible('a.category_id');
         $sql = "SELECT c.id, c.parent_id, c.name, c.slug, c.icon, c.description, c.sort_order,
-            (SELECT COUNT(*) FROM articles a WHERE a.category_id = c.id) AS article_count
+            (SELECT COUNT(*) FROM articles a WHERE a.category_id = c.id AND {$artVis}) AS article_count
             FROM categories c WHERE c.parent_id IS NULL AND c.slug != 'help' AND {$vis}
             ORDER BY c.sort_order, c.name";
         $res = $db->query($sql);
@@ -304,8 +305,9 @@ function mb_categories_list(?int $parentId = null): array
         if (!mb_user_can_view_category($parentId)) {
             return [];
         }
+        $artVis = mb_sql_article_catalog_visible('a.category_id');
         $stmt = $db->prepare("SELECT c.id, c.parent_id, c.name, c.slug, c.icon, c.description, c.sort_order,
-            (SELECT COUNT(*) FROM articles a WHERE a.category_id = c.id) AS article_count
+            (SELECT COUNT(*) FROM articles a WHERE a.category_id = c.id AND {$artVis}) AS article_count
             FROM categories c WHERE c.parent_id = ? AND {$vis} ORDER BY c.sort_order, c.name");
         if ($stmt === false) {
             return [];
@@ -469,20 +471,55 @@ function mb_render_category_tree(array $nodes, int $depth = 0, ?string $activeSl
     return $html;
 }
 
+/** SQL: статьи каталога, доступные текущему пользователю. */
+function mb_sql_article_catalog_visible(string $categoryIdExpr = 'a.category_id'): string
+{
+    return '(a.is_help = 0 AND ' . mb_sql_category_visible($categoryIdExpr) . ')';
+}
+
+/** @param array<string,mixed> $row */
+function mb_document_row_map(array $row): array
+{
+    $stored = $row['stored_name'] !== null && $row['stored_name'] !== '' ? (string) $row['stored_name'] : '';
+    $sizeBytes = (int) $row['size_bytes'];
+    $hasFile = false;
+    if ($stored !== '') {
+        $path = mb_storage_documents_dir() . '/' . basename($stored);
+        if (is_file($path)) {
+            $hasFile = true;
+            $sizeBytes = (int) filesize($path);
+        }
+    }
+
+    return [
+        'id' => (int) $row['id'],
+        'title' => (string) $row['title'],
+        'file_type' => (string) $row['file_type'],
+        'stored_name' => $stored !== '' ? $stored : null,
+        'size_bytes' => $sizeBytes,
+        'owner_label' => (string) $row['owner_label'],
+        'folder_path' => (string) $row['folder_path'],
+        'updated_at' => (string) $row['updated_at'],
+        'has_file' => $hasFile,
+    ];
+}
+
 /** @return array{articles:int,categories:int,tags:int,updated_today:int} */
 function mb_catalog_stats(): array
 {
     $db = mb_db();
+    $vis = mb_sql_article_catalog_visible('a.category_id');
+    $catVis = mb_sql_category_visible('c.id');
     $articles = 0;
     $categories = 0;
     $tags = 0;
     $today = 0;
-    $r = $db->query('SELECT COUNT(*) AS c FROM articles WHERE is_help = 0');
+    $r = $db->query("SELECT COUNT(*) AS c FROM articles a WHERE {$vis}");
     if ($r instanceof mysqli_result) {
         $articles = (int) ($r->fetch_assoc()['c'] ?? 0);
         $r->free();
     }
-    $r = $db->query('SELECT COUNT(*) AS c FROM categories');
+    $r = $db->query("SELECT COUNT(*) AS c FROM categories c WHERE c.slug != 'help' AND {$catVis}");
     if ($r instanceof mysqli_result) {
         $categories = (int) ($r->fetch_assoc()['c'] ?? 0);
         $r->free();
@@ -492,7 +529,7 @@ function mb_catalog_stats(): array
         $tags = (int) ($r->fetch_assoc()['c'] ?? 0);
         $r->free();
     }
-    $r = $db->query('SELECT COUNT(*) AS c FROM articles WHERE is_help = 0 AND DATE(updated_at) = CURDATE()');
+    $r = $db->query("SELECT COUNT(*) AS c FROM articles a WHERE {$vis} AND DATE(a.updated_at) = CURDATE()");
     if ($r instanceof mysqli_result) {
         $today = (int) ($r->fetch_assoc()['c'] ?? 0);
         $r->free();
@@ -728,16 +765,17 @@ function mb_search_highlight(string $text, string $q): string
 function mb_dashboard_stats(): array
 {
     $db = mb_db();
+    $vis = mb_sql_article_catalog_visible('a.category_id');
     $articles = 0;
     $categories = 0;
     $team = 0;
     $views = 0;
-    $r = $db->query('SELECT COUNT(*) AS c FROM articles WHERE is_help = 0');
+    $r = $db->query("SELECT COUNT(*) AS c FROM articles a WHERE {$vis}");
     if ($r instanceof mysqli_result) {
         $articles = (int) ($r->fetch_assoc()['c'] ?? 0);
         $r->free();
     }
-    $r = $db->query('SELECT COUNT(DISTINCT category_id) AS c FROM articles WHERE is_help = 0');
+    $r = $db->query("SELECT COUNT(DISTINCT a.category_id) AS c FROM articles a WHERE {$vis}");
     if ($r instanceof mysqli_result) {
         $categories = (int) ($r->fetch_assoc()['c'] ?? 0);
         $r->free();
@@ -747,7 +785,11 @@ function mb_dashboard_stats(): array
         $team = (int) ($r->fetch_assoc()['c'] ?? 0);
         $r->free();
     }
-    $r = $db->query('SELECT COUNT(*) AS c FROM article_views WHERE viewed_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)');
+    $r = $db->query(
+        "SELECT COUNT(*) AS c FROM article_views v
+        INNER JOIN articles a ON a.id = v.article_id
+        WHERE {$vis} AND v.viewed_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)"
+    );
     if ($r instanceof mysqli_result) {
         $views = (int) ($r->fetch_assoc()['c'] ?? 0);
         $r->free();
@@ -867,27 +909,6 @@ function mb_article_by_id(int $id): ?array
 }
 
 /** @return list<array<string,mixed>> */
-function mb_help_articles(): array
-{
-    $db = mb_db();
-    $res = $db->query(
-        "SELECT a.id, a.title, a.slug, a.excerpt, a.updated_at, a.is_help,
-        '' AS category_name, '' AS category_slug, '' AS author_name
-        FROM articles a WHERE a.is_help = 1 ORDER BY a.id"
-    );
-    if (!$res instanceof mysqli_result) {
-        return [];
-    }
-    $rows = [];
-    while ($row = $res->fetch_assoc()) {
-        $rows[] = mb_article_row_map($row);
-    }
-    $res->free();
-
-    return $rows;
-}
-
-/** @return list<array<string,mixed>> */
 function mb_documents_list(): array
 {
     $db = mb_db();
@@ -899,17 +920,7 @@ function mb_documents_list(): array
     }
     $rows = [];
     while ($row = $res->fetch_assoc()) {
-        $rows[] = [
-            'id' => (int) $row['id'],
-            'title' => (string) $row['title'],
-            'file_type' => (string) $row['file_type'],
-            'stored_name' => $row['stored_name'] !== null ? (string) $row['stored_name'] : null,
-            'size_bytes' => (int) $row['size_bytes'],
-            'owner_label' => (string) $row['owner_label'],
-            'folder_path' => (string) $row['folder_path'],
-            'updated_at' => (string) $row['updated_at'],
-            'has_file' => $row['stored_name'] !== null && $row['stored_name'] !== '',
-        ];
+        $rows[] = mb_document_row_map($row);
     }
     $res->free();
 
@@ -1186,31 +1197,27 @@ function mb_category_delete(int $id): ?string
 /** @return array{files:int,folders:int,bytes:int} */
 function mb_documents_stats(): array
 {
-    $db = mb_db();
-    $files = 0;
+    $docs = mb_documents_list();
     $bytes = 0;
-    $r = $db->query('SELECT COUNT(*) AS c, COALESCE(SUM(size_bytes),0) AS b FROM documents');
-    if ($r instanceof mysqli_result) {
-        $row = $r->fetch_assoc();
-        $files = (int) ($row['c'] ?? 0);
-        $bytes = (int) ($row['b'] ?? 0);
-        $r->free();
-    }
-    $folders = 0;
-    $r = $db->query('SELECT COUNT(DISTINCT folder_path) AS c FROM documents');
-    if ($r instanceof mysqli_result) {
-        $folders = (int) ($r->fetch_assoc()['c'] ?? 0);
-        $r->free();
+    $folders = [];
+    foreach ($docs as $d) {
+        $bytes += (int) $d['size_bytes'];
+        $folders[$d['folder_path']] = true;
     }
 
-    return ['files' => $files, 'folders' => $folders, 'bytes' => $bytes];
+    return [
+        'files' => count($docs),
+        'folders' => count($folders),
+        'bytes' => $bytes,
+    ];
 }
 
 /** @return list<string> */
 function mb_document_folders(): array
 {
     $db = mb_db();
-    $res = $db->query('SELECT DISTINCT folder_path FROM documents ORDER BY folder_path');
+    $vis = mb_sql_document_visible('d.id');
+    $res = $db->query("SELECT DISTINCT d.folder_path FROM documents d WHERE {$vis} ORDER BY d.folder_path");
     if (!$res instanceof mysqli_result) {
         return [];
     }
@@ -1485,17 +1492,19 @@ function mb_export_articles(): array
 
 function mb_category_article_count_recursive(int $categoryId): int
 {
+    if (!mb_user_can_view_category($categoryId)) {
+        return 0;
+    }
     $db = mb_db();
     $total = 0;
-    $stmt = $db->prepare('SELECT COUNT(*) AS c FROM articles WHERE category_id = ?');
+    $stmt = $db->prepare('SELECT COUNT(*) AS c FROM articles a WHERE a.category_id = ? AND a.is_help = 0');
     if ($stmt !== false) {
         $stmt->bind_param('i', $categoryId);
         $stmt->execute();
         $total += (int) ($stmt->get_result()->fetch_assoc()['c'] ?? 0);
         $stmt->close();
     }
-    $children = mb_categories_list($categoryId);
-    foreach ($children as $ch) {
+    foreach (mb_categories_list($categoryId) as $ch) {
         $total += mb_category_article_count_recursive((int) $ch['id']);
     }
 
