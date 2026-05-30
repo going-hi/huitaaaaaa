@@ -204,6 +204,100 @@ function mb_sql_in_int_list(array $ids): string
     return implode(',', array_map('intval', $ids));
 }
 
+/** Группы доступа раздела с учётом ближайшего ограниченного предка. */
+function mb_category_effective_group_ids(int $categoryId): array
+{
+    static $cache = [];
+    if (array_key_exists($categoryId, $cache)) {
+        return $cache[$categoryId];
+    }
+    $currentId = $categoryId;
+    $db = mb_db();
+    while ($currentId > 0) {
+        $groups = mb_category_group_ids($currentId);
+        if ($groups !== []) {
+            return $cache[$categoryId] = $groups;
+        }
+        $stmt = $db->prepare('SELECT parent_id FROM categories WHERE id = ? LIMIT 1');
+        if ($stmt === false) {
+            break;
+        }
+        $stmt->bind_param('i', $currentId);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        if ($row === null || $row['parent_id'] === null) {
+            break;
+        }
+        $currentId = (int) $row['parent_id'];
+    }
+
+    return $cache[$categoryId] = [];
+}
+
+function mb_category_is_visible_to_user(int $categoryId, ?int $userId = null): bool
+{
+    if ($userId === null) {
+        $u = mb_current_user();
+        $userId = $u !== null ? $u['id'] : 0;
+    }
+    if (mb_user_role_by_id($userId) === MB_ROLE_ADMIN) {
+        return true;
+    }
+    $effective = mb_category_effective_group_ids($categoryId);
+    if ($effective === []) {
+        return true;
+    }
+    $userGroups = mb_user_group_ids($userId);
+    foreach ($effective as $groupId) {
+        if (in_array($groupId, $userGroups, true)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/** @return list<int> */
+function mb_visible_category_ids(?int $userId = null): array
+{
+    static $cache = [];
+    if ($userId === null) {
+        $u = mb_current_user();
+        $userId = $u !== null ? $u['id'] : 0;
+    }
+    if (isset($cache[$userId])) {
+        return $cache[$userId];
+    }
+    if (mb_user_role_by_id($userId) === MB_ROLE_ADMIN) {
+        $db = mb_db();
+        $res = $db->query('SELECT id FROM categories');
+        $ids = [];
+        if ($res instanceof mysqli_result) {
+            while ($row = $res->fetch_assoc()) {
+                $ids[] = (int) $row['id'];
+            }
+            $res->free();
+        }
+
+        return $cache[$userId] = $ids;
+    }
+    $db = mb_db();
+    $res = $db->query("SELECT id FROM categories WHERE slug != 'help'");
+    $ids = [];
+    if ($res instanceof mysqli_result) {
+        while ($row = $res->fetch_assoc()) {
+            $id = (int) $row['id'];
+            if (mb_category_is_visible_to_user($id, $userId)) {
+                $ids[] = $id;
+            }
+        }
+        $res->free();
+    }
+
+    return $cache[$userId] = $ids;
+}
+
 /** SQL-фрагмент: категория доступна текущему пользователю (alias — id категории). */
 function mb_sql_category_visible(string $categoryIdExpr, ?int $userId = null): string
 {
@@ -214,17 +308,12 @@ function mb_sql_category_visible(string $categoryIdExpr, ?int $userId = null): s
     if (mb_user_role_by_id($userId) === MB_ROLE_ADMIN) {
         return '1=1';
     }
-    $groups = mb_user_group_ids($userId);
-    $gList = mb_sql_in_int_list($groups);
-    $cid = $categoryIdExpr;
+    $ids = mb_visible_category_ids($userId);
+    if ($ids === []) {
+        return '0';
+    }
 
-    return "(
-        (SELECT COUNT(*) FROM category_access_groups cag WHERE cag.category_id = {$cid}) = 0
-        OR EXISTS (
-            SELECT 1 FROM category_access_groups cag
-            WHERE cag.category_id = {$cid} AND cag.group_id IN ({$gList})
-        )
-    )";
+    return $categoryIdExpr . ' IN (' . implode(',', array_map('intval', $ids)) . ')';
 }
 
 function mb_user_can_view_category(int $categoryId, ?int $userId = null): bool
@@ -237,17 +326,19 @@ function mb_user_can_view_category(int $categoryId, ?int $userId = null): bool
         return true;
     }
     $db = mb_db();
-    $sql = 'SELECT 1 FROM categories c WHERE c.id = ? AND ' . mb_sql_category_visible('c.id', $userId) . ' LIMIT 1';
-    $stmt = $db->prepare($sql);
+    $stmt = $db->prepare('SELECT 1 FROM categories WHERE id = ? LIMIT 1');
     if ($stmt === false) {
         return false;
     }
     $stmt->bind_param('i', $categoryId);
     $stmt->execute();
-    $ok = $stmt->get_result()->fetch_assoc() !== null;
+    $exists = $stmt->get_result()->fetch_assoc() !== null;
     $stmt->close();
+    if (!$exists) {
+        return false;
+    }
 
-    return $ok;
+    return mb_category_is_visible_to_user($categoryId, $userId);
 }
 
 function mb_sql_document_visible(string $documentIdExpr, ?int $userId = null): string

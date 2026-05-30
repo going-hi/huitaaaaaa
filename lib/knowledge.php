@@ -432,16 +432,20 @@ function mb_categories_list_all(?int $parentId = null): array
 /** @return list<array<string,mixed>> */
 function mb_category_tree(): array
 {
+    $visibleIds = array_flip(mb_visible_category_ids());
     $db = mb_db();
-    $vis = mb_sql_category_visible('id');
-    $res = $db->query("SELECT id, parent_id, name, slug FROM categories WHERE slug != 'help' AND {$vis} ORDER BY sort_order, name");
+    $res = $db->query("SELECT id, parent_id, name, slug FROM categories WHERE slug != 'help' ORDER BY sort_order, name");
     if (!$res instanceof mysqli_result) {
         return [];
     }
     $all = [];
     while ($row = $res->fetch_assoc()) {
-        $all[(int) $row['id']] = [
-            'id' => (int) $row['id'],
+        $id = (int) $row['id'];
+        if (!isset($visibleIds[$id])) {
+            continue;
+        }
+        $all[$id] = [
+            'id' => $id,
             'parent_id' => $row['parent_id'] !== null ? (int) $row['parent_id'] : null,
             'name' => (string) $row['name'],
             'slug' => (string) $row['slug'],
@@ -454,7 +458,7 @@ function mb_category_tree(): array
         $pid = $node['parent_id'];
         if ($pid !== null && isset($all[$pid])) {
             $all[$pid]['children'][] = &$node;
-        } else {
+        } elseif ($pid === null) {
             $roots[] = &$node;
         }
     }
@@ -468,27 +472,32 @@ function mb_render_category_tree(array $nodes, int $depth = 0, ?string $activeSl
     if ($nodes === []) {
         return '';
     }
-    $html = $depth === 0 ? '<ul class="section-tree">' : '<ul class="section-tree section-tree--nested">';
+    $items = '';
     foreach ($nodes as $node) {
-        if ($node['slug'] === 'help') {
+        if ($node['slug'] === 'help' || !mb_user_can_view_category((int) $node['id'])) {
+            continue;
+        }
+        $childrenHtml = $node['children'] !== [] ? mb_render_category_tree($node['children'], $depth + 1, $activeSlug) : '';
+        $count = mb_category_article_count_recursive((int) $node['id']);
+        if ($count === 0 && $childrenHtml === '') {
             continue;
         }
         $isActive = $activeSlug !== null && $node['slug'] === $activeSlug;
         $linkClass = 'section-tree__link' . ($isActive ? ' is-active' : '');
-        $html .= '<li class="section-tree__item">';
-        $count = mb_category_article_count_recursive((int) $node['id']);
-        $html .= '<a href="category.php?slug=' . rawurlencode($node['slug']) . '" class="' . $linkClass . '">';
-        $html .= '<span class="section-tree__label">' . mb_h($node['name']) . '</span>';
-        $html .= '<span class="section-tree__count">' . (int) $count . '</span>';
-        $html .= '</a>';
-        if ($node['children'] !== []) {
-            $html .= mb_render_category_tree($node['children'], $depth + 1, $activeSlug);
-        }
-        $html .= '</li>';
+        $items .= '<li class="section-tree__item">';
+        $items .= '<a href="category.php?slug=' . rawurlencode($node['slug']) . '" class="' . $linkClass . '">';
+        $items .= '<span class="section-tree__label">' . mb_h($node['name']) . '</span>';
+        $items .= '<span class="section-tree__count">' . (int) $count . '</span>';
+        $items .= '</a>';
+        $items .= $childrenHtml;
+        $items .= '</li>';
     }
-    $html .= '</ul>';
+    if ($items === '') {
+        return '';
+    }
+    $tag = $depth === 0 ? '<ul class="section-tree">' : '<ul class="section-tree section-tree--nested">';
 
-    return $html;
+    return $tag . $items . '</ul>';
 }
 
 /** SQL: статьи каталога, доступные текущему пользователю. */
@@ -1810,7 +1819,8 @@ function mb_category_article_count_recursive(int $categoryId): int
     }
     $db = mb_db();
     $total = 0;
-    $stmt = $db->prepare('SELECT COUNT(*) AS c FROM articles a WHERE a.category_id = ? AND a.is_help = 0');
+    $vis = mb_sql_article_catalog_visible('a.category_id');
+    $stmt = $db->prepare("SELECT COUNT(*) AS c FROM articles a WHERE a.category_id = ? AND {$vis}");
     if ($stmt !== false) {
         $stmt->bind_param('i', $categoryId);
         $stmt->execute();
