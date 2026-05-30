@@ -11,8 +11,11 @@ require_once __DIR__ . '/lib/cabinet-layout.php';
 mb_require_admin();
 $user = mb_current_user();
 
+$filterRaw = trim((string) ($_GET['q'] ?? $_POST['q'] ?? ''));
+$filterQ = mb_strtolower($filterRaw, 'UTF-8');
+
 $error = null;
-$success = null;
+$success = mb_flash_take('cabinet_notice');
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && mb_csrf_validate(isset($_POST['_csrf']) ? (string) $_POST['_csrf'] : null)) {
     $uid = (int) ($_POST['user_id'] ?? 0);
     if ($uid > 0) {
@@ -23,14 +26,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && mb_csrf_validate(isset($_POST['_csr
         } else {
             $gids = isset($_POST['group_ids']) && is_array($_POST['group_ids']) ? array_map('intval', $_POST['group_ids']) : [];
             mb_user_set_groups($uid, $gids);
-            $success = 'Пользователь обновлён.';
+            mb_flash_set('cabinet_notice', 'Пользователь обновлён.');
+            $redirectUrl = 'admin-users.php';
+            if ($filterRaw !== '') {
+                $redirectUrl .= '?' . http_build_query(['q' => $filterRaw]);
+            }
+            header('Location: ' . $redirectUrl, true, 302);
+            exit;
         }
     }
 }
 
 $users = mb_users_list();
 $groups = mb_access_groups_list();
-$filterQ = mb_strtolower(trim((string) ($_GET['q'] ?? '')), 'UTF-8');
 
 $adminUserSearchBlob = static function (array $u, array $groups): string {
     $assignedGroups = array_values(array_filter(
@@ -82,7 +90,7 @@ mb_cabinet_sidebar_open('admin-users');
             name="q"
             class="form-input"
             data-admin-user-filter
-            value="<?= mb_h(trim((string) ($_GET['q'] ?? ''))) ?>"
+            value="<?= mb_h($filterRaw) ?>"
             placeholder="Имя, email, роль или группа..."
             autocomplete="off"
           >
@@ -103,6 +111,7 @@ mb_cabinet_sidebar_open('admin-users');
           <form class="admin-user-card__form cabinet-form" method="post">
             <input type="hidden" name="_csrf" value="<?= mb_h(mb_csrf_token()) ?>">
             <input type="hidden" name="user_id" value="<?= (int) $u['id'] ?>">
+            <input type="hidden" name="q" value="<?= mb_h($filterRaw) ?>">
 
             <div class="admin-user-card__head">
               <div class="admin-user-card__identity">
@@ -197,6 +206,17 @@ mb_cabinet_sidebar_open('admin-users');
           if (count) {
             count.textContent = String(visible);
           }
+          var url = new URL(window.location.href);
+          var raw = input.value.trim();
+          if (raw) {
+            url.searchParams.set('q', raw);
+          } else {
+            url.searchParams.delete('q');
+          }
+          window.history.replaceState(null, '', url.toString());
+          document.querySelectorAll('input[name="q"][type="hidden"]').forEach(function (field) {
+            field.value = raw;
+          });
         }
 
         input.addEventListener('input', applyFilter);
