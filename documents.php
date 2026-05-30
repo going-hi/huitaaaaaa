@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && mb_can_write()) {
             $_FILES['file'],
             (string) ($_POST['title'] ?? ''),
             (string) ($_POST['owner_label'] ?? $user['name']),
-            (string) ($_POST['folder_path'] ?? '/'),
+            '/',
             $groupIds
         );
         if (isset($res['error'])) {
@@ -43,7 +43,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && mb_can_write()) {
 
 $docs = mb_documents_list();
 $stats = mb_documents_stats();
-$folders = mb_document_folders();
 $groups = mb_access_groups_list();
 $lastSync = $docs !== [] ? mb_format_datetime($docs[0]['updated_at']) : '—';
 $canWrite = mb_can_write();
@@ -59,7 +58,6 @@ mb_cabinet_sidebar_open('documents', '', 'cabinet-main--wide');
 
       <div class="cabinet-meta-strip">
         <span class="cabinet-pill"><strong><?= (int) $stats['files'] ?></strong> файлов</span>
-        <span class="cabinet-pill"><strong><?= (int) $stats['folders'] ?></strong> папок</span>
         <span class="cabinet-pill">Занято <strong><?= mb_h(mb_format_bytes((int) $stats['bytes'])) ?></strong></span>
         <span class="cabinet-pill cabinet-pill--accent"><?= mb_h($lastSync) ?></span>
       </div>
@@ -74,7 +72,6 @@ mb_cabinet_sidebar_open('documents', '', 'cabinet-main--wide');
               <label class="form-label"><span>Название</span><input type="text" name="title" class="form-input" required maxlength="500"></label>
               <label class="form-label"><span>Файл</span><input type="file" name="file" class="form-input" required accept=".pdf,.doc,.docx,.txt,.xlsx,.csv,.md"></label>
               <label class="form-label"><span>Ответственный</span><input type="text" name="owner_label" class="form-input" value="<?= mb_h($user['name']) ?>"></label>
-              <label class="form-label"><span>Папка</span><input type="text" name="folder_path" class="form-input" placeholder="/юридические/" value="/"></label>
             </div>
             <?php if ($isAdmin): ?>
             <fieldset class="cabinet-fieldset">
@@ -103,7 +100,6 @@ mb_cabinet_sidebar_open('documents', '', 'cabinet-main--wide');
                 <th class="col-type">Тип</th>
                 <th class="col-size">Размер</th>
                 <th class="col-owner">Ответственный</th>
-                <th class="col-folder">Папка</th>
                 <th class="col-date">Обновлено</th>
                 <th class="col-actions">Действия</th>
               </tr>
@@ -115,7 +111,6 @@ mb_cabinet_sidebar_open('documents', '', 'cabinet-main--wide');
                 <td class="col-type" data-label="Тип"><span class="doc-type-badge"><?= mb_h($d['file_type']) ?></span></td>
                 <td class="col-size" data-label="Размер"><?= mb_h(mb_format_bytes((int) $d['size_bytes'])) ?></td>
                 <td class="col-owner" data-label="Ответственный"><?= mb_h($d['owner_label']) ?></td>
-                <td class="col-folder" data-label="Папка"><code class="inline-code"><?= mb_h($d['folder_path']) ?></code></td>
                 <td class="col-date" data-label="Обновлено"><?= mb_h(mb_format_date_short($d['updated_at'])) ?></td>
                 <td class="col-actions cabinet-table-actions" data-label="">
                   <?php if (!empty($d['has_file'])): ?>
@@ -137,15 +132,6 @@ mb_cabinet_sidebar_open('documents', '', 'cabinet-main--wide');
           </table>
         </div>
       </div>
-
-      <?php if ($folders !== []): ?>
-      <h2 class="cabinet-section-heading">Папки</h2>
-      <div class="cabinet-folder-chips">
-        <?php foreach ($folders as $path): ?>
-        <span class="cabinet-folder-chip"><?= mb_h($path) ?></span>
-        <?php endforeach; ?>
-      </div>
-      <?php endif; ?>
 <?php
 mb_cabinet_sidebar_close();
 mb_cabinet_foot('documents');
