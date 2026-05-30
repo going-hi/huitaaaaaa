@@ -69,6 +69,8 @@ function mb_login_redirect_target(?string $next): string
         'document-download.php',
         'admin-users.php',
         'admin-access.php',
+        'workspaces.php',
+        'join.php',
     ];
     if ($next === null) {
         return $default;
@@ -85,6 +87,12 @@ function mb_login_redirect_target(?string $next): string
         return $default;
     }
     $base = basename($path);
+    if (!in_array($base, $allow, true)) {
+        return $default;
+    }
+    if ($base === 'join.php' && str_contains($next, '?')) {
+        return $next;
+    }
 
-    return in_array($base, $allow, true) ? $base : $default;
+    return $base;
 }

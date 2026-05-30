@@ -138,6 +138,9 @@ function mb_user_login(string $login, string $password): ?string
     ];
     mb_csrf_regenerate();
 
+    require_once __DIR__ . '/workspace.php';
+    mb_workspace_session_sync((int) $user['id']);
+
     return null;
 }
 
@@ -209,6 +212,8 @@ function mb_current_request_allowed_page(): ?string
         'document-download.php',
         'admin-users.php',
         'admin-access.php',
+        'workspaces.php',
+        'join.php',
     ];
 
     return in_array($base, $allow, true) ? $base : null;

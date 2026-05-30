@@ -37,7 +37,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: login.php', true, 302);
         exit;
     }
-    mb_flash_set('cabinet_notice', 'Добро пожаловать! Аккаунт успешно создан.');
+    require_once __DIR__ . '/lib/workspace.php';
+    $user = mb_current_user();
+    $wsTitle = trim((string) ($_POST['workspace_title'] ?? ''));
+    if ($wsTitle === '') {
+        $wsTitle = 'База знаний ' . trim($name);
+    }
+    $created = mb_workspace_create((int) $user['id'], $wsTitle);
+    if (isset($created['error'])) {
+        mb_flash_set('cabinet_notice', 'Аккаунт создан. Создайте базу знаний на следующем шаге.');
+        header('Location: workspaces.php', true, 302);
+        exit;
+    }
+    mb_workspace_set_current((int) $created['id'], (int) $user['id']);
+    mb_flash_set('cabinet_notice', 'Добро пожаловать! Ваша база знаний создана.');
     header('Location: cabinet.php', true, 302);
     exit;
 }
@@ -94,6 +107,10 @@ mb_seo_render_head([
         <label class="form-label">
           <span>Email</span>
           <input type="email" name="email" class="form-input" placeholder="you@example.com" required value="<?= mb_h($oldEmail) ?>" autocomplete="email">
+        </label>
+        <label class="form-label">
+          <span>Название вашей базы знаний</span>
+          <input type="text" name="workspace_title" class="form-input" placeholder="Например: Моя команда" maxlength="255" value="<?= mb_h($oldName !== '' ? 'База знаний ' . $oldName : '') ?>">
         </label>
         <label class="form-label">
           <span>Пароль</span>

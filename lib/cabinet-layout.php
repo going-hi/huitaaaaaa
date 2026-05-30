@@ -10,6 +10,8 @@ require_once __DIR__ . '/seo.php';
  */
 function mb_cabinet_header_render(array $user, string $searchPlaceholder = 'Поиск...', bool $narrowSearch = true): void
 {
+    require_once __DIR__ . '/workspace.php';
+    $wsHdr = mb_workspace_current();
     $searchClass = $narrowSearch ? 'cabinet-header-search cabinet-header-search--narrow' : 'cabinet-header-search';
     ?>
   <header class="cabinet-header">
@@ -25,6 +27,9 @@ function mb_cabinet_header_render(array $user, string $searchPlaceholder = 'По
         <input type="search" name="q" class="form-input cabinet-search-input" placeholder="<?= mb_h($searchPlaceholder) ?>" value="<?= mb_h(isset($_GET['q']) ? trim((string) $_GET['q']) : '') ?>">
       </form>
       <div class="cabinet-header-actions">
+        <?php if ($wsHdr !== null): ?>
+        <a href="workspaces.php" class="cabinet-user-chip hide-mobile" title="Сменить базу знаний"><?= mb_h($wsHdr['title']) ?></a>
+        <?php endif; ?>
         <span class="cabinet-user-chip hide-mobile"><?= mb_h($user['name']) ?></span>
         <a href="logout.php" class="btn btn-outline btn-sm">Выйти</a>
       </div>
@@ -140,6 +145,11 @@ function mb_cabinet_catalog_breadcrumbs(array $categories, ?string $currentLabel
 
 function mb_cabinet_head(string $title): void
 {
+    $self = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    if ($self !== 'workspaces.php') {
+        mb_require_workspace();
+    }
+    $ws = mb_workspace_current();
     ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -148,6 +158,9 @@ function mb_cabinet_head(string $title): void
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title><?= mb_h($title) ?> — MindBase</title>
   <?php mb_seo_render_favicons(); ?>
+  <?php if ($ws !== null): ?>
+  <meta name="mindbase-workspace" content="<?= mb_h($ws['title']) ?>">
+  <?php endif; ?>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">

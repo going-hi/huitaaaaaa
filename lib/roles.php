@@ -82,18 +82,23 @@ function mb_refresh_session_user(): void
 
 function mb_user_role(?array $user = null): string
 {
+    if (!empty($_SESSION['workspace_role']) && in_array((string) $_SESSION['workspace_role'], mb_valid_roles(), true)) {
+        return (string) $_SESSION['workspace_role'];
+    }
     if ($user === null) {
         $user = mb_current_user();
     }
-    if ($user === null) {
-        return MB_ROLE_USER;
+    if ($user !== null && function_exists('mb_workspace_current_id')) {
+        $wsId = mb_workspace_current_id();
+        if ($wsId !== null && function_exists('mb_workspace_member_role')) {
+            $wsRole = mb_workspace_member_role($wsId, (int) $user['id']);
+            if ($wsRole !== null) {
+                return mb_workspace_role_to_app($wsRole);
+            }
+        }
     }
-    if (!empty($user['role']) && in_array($user['role'], mb_valid_roles(), true)) {
-        return (string) $user['role'];
-    }
-    $full = mb_current_user_full();
 
-    return $full['role'] ?? MB_ROLE_USER;
+    return MB_ROLE_USER;
 }
 
 function mb_is_admin(?array $user = null): bool
@@ -158,18 +163,18 @@ function mb_forbidden_page(string $message): void
 
 function mb_user_role_by_id(int $userId): string
 {
-    $db = mb_db();
-    $stmt = $db->prepare('SELECT role FROM users WHERE id = ? LIMIT 1');
-    if ($stmt === false) {
-        return MB_ROLE_USER;
+    if (!function_exists('mb_workspace_current_id')) {
+        require_once __DIR__ . '/workspace.php';
     }
-    $stmt->bind_param('i', $userId);
-    $stmt->execute();
-    $row = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-    $role = (string) ($row['role'] ?? MB_ROLE_USER);
+    $wsId = mb_workspace_current_id();
+    if ($wsId !== null) {
+        $wsRole = mb_workspace_member_role($wsId, $userId);
+        if ($wsRole !== null) {
+            return mb_workspace_role_to_app($wsRole);
+        }
+    }
 
-    return in_array($role, mb_valid_roles(), true) ? $role : MB_ROLE_USER;
+    return MB_ROLE_USER;
 }
 
 /** @return list<int> */
@@ -178,12 +183,23 @@ function mb_user_group_ids(int $userId): array
     if (mb_user_role_by_id($userId) === MB_ROLE_ADMIN) {
         return [];
     }
+    if (!function_exists('mb_workspace_current_id')) {
+        require_once __DIR__ . '/workspace.php';
+    }
+    $wsId = mb_workspace_current_id();
+    if ($wsId === null) {
+        return [];
+    }
     $db = mb_db();
-    $stmt = $db->prepare('SELECT group_id FROM user_access_groups WHERE user_id = ?');
+    $stmt = $db->prepare(
+        'SELECT uag.group_id FROM user_access_groups uag
+        INNER JOIN access_groups ag ON ag.id = uag.group_id
+        WHERE uag.user_id = ? AND ag.workspace_id = ?'
+    );
     if ($stmt === false) {
         return [];
     }
-    $stmt->bind_param('i', $userId);
+    $stmt->bind_param('ii', $userId, $wsId);
     $stmt->execute();
     $res = $stmt->get_result();
     $ids = [];
@@ -266,36 +282,52 @@ function mb_visible_category_ids(?int $userId = null): array
         $u = mb_current_user();
         $userId = $u !== null ? $u['id'] : 0;
     }
-    if (isset($cache[$userId])) {
-        return $cache[$userId];
+    if (!function_exists('mb_workspace_current_id')) {
+        require_once __DIR__ . '/workspace.php';
+    }
+    $wsId = mb_workspace_current_id() ?? 0;
+    $cacheKey = $userId . ':' . $wsId;
+    if (isset($cache[$cacheKey])) {
+        return $cache[$cacheKey];
+    }
+    if ($wsId <= 0) {
+        return $cache[$cacheKey] = [];
     }
     if (mb_user_role_by_id($userId) === MB_ROLE_ADMIN) {
         $db = mb_db();
-        $res = $db->query('SELECT id FROM categories');
-        $ids = [];
-        if ($res instanceof mysqli_result) {
-            while ($row = $res->fetch_assoc()) {
-                $ids[] = (int) $row['id'];
-            }
-            $res->free();
+        $stmt = $db->prepare("SELECT id FROM categories WHERE workspace_id = ? AND slug != 'help'");
+        if ($stmt === false) {
+            return $cache[$cacheKey] = [];
         }
+        $stmt->bind_param('i', $wsId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $ids = [];
+        while ($row = $res->fetch_assoc()) {
+            $ids[] = (int) $row['id'];
+        }
+        $stmt->close();
 
-        return $cache[$userId] = $ids;
+        return $cache[$cacheKey] = $ids;
     }
     $db = mb_db();
-    $res = $db->query("SELECT id FROM categories WHERE slug != 'help'");
-    $ids = [];
-    if ($res instanceof mysqli_result) {
-        while ($row = $res->fetch_assoc()) {
-            $id = (int) $row['id'];
-            if (mb_category_is_visible_to_user($id, $userId)) {
-                $ids[] = $id;
-            }
-        }
-        $res->free();
+    $stmt = $db->prepare("SELECT id FROM categories WHERE workspace_id = ? AND slug != 'help'");
+    if ($stmt === false) {
+        return $cache[$cacheKey] = [];
     }
+    $stmt->bind_param('i', $wsId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $ids = [];
+    while ($row = $res->fetch_assoc()) {
+        $id = (int) $row['id'];
+        if (mb_category_is_visible_to_user($id, $userId)) {
+            $ids[] = $id;
+        }
+    }
+    $stmt->close();
 
-    return $cache[$userId] = $ids;
+    return $cache[$cacheKey] = $ids;
 }
 
 /** SQL-фрагмент: категория доступна текущему пользователю (alias — id категории). */
@@ -389,8 +421,21 @@ function mb_user_can_view_document(int $documentId, ?int $userId = null): bool
 /** @return list<array{id:int,name:string,slug:string,description:string}> */
 function mb_access_groups_list(): array
 {
+    if (!function_exists('mb_ws_id')) {
+        require_once __DIR__ . '/workspace.php';
+    }
+    $wsId = mb_workspace_current_id();
+    if ($wsId === null) {
+        return [];
+    }
     $db = mb_db();
-    $res = $db->query('SELECT id, name, slug, description FROM access_groups ORDER BY name');
+    $stmt = $db->prepare('SELECT id, name, slug, description FROM access_groups WHERE workspace_id = ? ORDER BY name');
+    if ($stmt === false) {
+        return [];
+    }
+    $stmt->bind_param('i', $wsId);
+    $stmt->execute();
+    $res = $stmt->get_result();
     if (!$res instanceof mysqli_result) {
         return [];
     }
@@ -403,7 +448,7 @@ function mb_access_groups_list(): array
             'description' => (string) ($row['description'] ?? ''),
         ];
     }
-    $res->free();
+    $stmt->close();
 
     return $rows;
 }
@@ -510,45 +555,21 @@ function mb_user_set_role(int $userId, string $role): ?string
     if (!in_array($role, mb_valid_roles(), true)) {
         return 'Некорректная роль.';
     }
-    $db = mb_db();
-    $stmt = $db->prepare('UPDATE users SET role = ? WHERE id = ?');
-    if ($stmt === false) {
-        return 'Ошибка сохранения.';
-    }
-    $stmt->bind_param('si', $role, $userId);
-    $ok = $stmt->execute();
-    $stmt->close();
-    $cu = mb_current_user();
-    if ($ok && $cu !== null && $cu['id'] === $userId) {
-        mb_refresh_session_user();
+    if (!function_exists('mb_workspace_set_member_role')) {
+        require_once __DIR__ . '/workspace.php';
     }
 
-    return $ok ? null : 'Ошибка сохранения.';
+    return mb_workspace_set_member_role(mb_ws_id(), $userId, $role);
 }
 
 /** @return list<array<string,mixed>> */
 function mb_users_list(): array
 {
-    $db = mb_db();
-    $res = $db->query('SELECT id, name, email, role, role_title, created_at FROM users ORDER BY name');
-    if (!$res instanceof mysqli_result) {
-        return [];
+    if (!function_exists('mb_workspace_members_list')) {
+        require_once __DIR__ . '/workspace.php';
     }
-    $rows = [];
-    while ($row = $res->fetch_assoc()) {
-        $rows[] = [
-            'id' => (int) $row['id'],
-            'name' => (string) $row['name'],
-            'email' => (string) $row['email'],
-            'role' => (string) ($row['role'] ?? MB_ROLE_USER),
-            'role_title' => $row['role_title'] !== null ? (string) $row['role_title'] : null,
-            'created_at' => (string) $row['created_at'],
-            'group_ids' => mb_user_group_ids((int) $row['id']),
-        ];
-    }
-    $res->free();
 
-    return $rows;
+    return mb_workspace_members_list(mb_ws_id());
 }
 
 function mb_group_slugify(string $name): string
@@ -562,14 +583,18 @@ function mb_group_slugify(string $name): string
 
 function mb_group_unique_slug(mysqli $db, string $base): string
 {
+    if (!function_exists('mb_ws_id')) {
+        require_once __DIR__ . '/workspace.php';
+    }
+    $wsId = mb_ws_id();
     $slug = $base;
     $n = 0;
     while (true) {
-        $stmt = $db->prepare('SELECT id FROM access_groups WHERE slug = ? LIMIT 1');
+        $stmt = $db->prepare('SELECT id FROM access_groups WHERE slug = ? AND workspace_id = ? LIMIT 1');
         if ($stmt === false) {
             return $slug;
         }
-        $stmt->bind_param('s', $slug);
+        $stmt->bind_param('si', $slug, $wsId);
         $stmt->execute();
         $row = $stmt->get_result()->fetch_assoc();
         $stmt->close();
@@ -589,24 +614,25 @@ function mb_access_group_save(?int $id, string $name, string $description): arra
         return ['error' => 'Укажите название группы.'];
     }
     $db = mb_db();
+    $wsId = mb_ws_id();
     $slug = mb_group_unique_slug($db, mb_group_slugify($name));
     if ($id === null) {
-        $stmt = $db->prepare('INSERT INTO access_groups (name, slug, description) VALUES (?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO access_groups (workspace_id, name, slug, description) VALUES (?, ?, ?, ?)');
         if ($stmt === false) {
             return ['error' => 'Ошибка сохранения.'];
         }
-        $stmt->bind_param('sss', $name, $slug, $description);
+        $stmt->bind_param('isss', $wsId, $name, $slug, $description);
         $stmt->execute();
         $newId = (int) $stmt->insert_id;
         $stmt->close();
 
         return ['id' => $newId];
     }
-    $stmt = $db->prepare('UPDATE access_groups SET name = ?, description = ? WHERE id = ?');
+    $stmt = $db->prepare('UPDATE access_groups SET name = ?, description = ? WHERE id = ? AND workspace_id = ?');
     if ($stmt === false) {
         return ['error' => 'Ошибка сохранения.'];
     }
-    $stmt->bind_param('ssi', $name, $description, $id);
+    $stmt->bind_param('ssii', $name, $description, $id, $wsId);
     $stmt->execute();
     $stmt->close();
 

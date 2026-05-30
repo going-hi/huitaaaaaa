@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/roles.php';
+require_once __DIR__ . '/workspace.php';
 
 function mb_storage_documents_dir(): string
 {
@@ -57,20 +58,21 @@ function mb_slugify(string $text): string
 
 function mb_unique_slug(mysqli $db, string $base, string $table = 'articles'): string
 {
+    $wsId = mb_ws_id();
     $slug = $base;
     $n = 0;
     while (true) {
         if ($table === 'categories') {
-            $stmt = $db->prepare('SELECT id FROM categories WHERE slug = ? LIMIT 1');
+            $stmt = $db->prepare('SELECT id FROM categories WHERE slug = ? AND workspace_id = ? LIMIT 1');
         } elseif ($table === 'access_groups') {
-            $stmt = $db->prepare('SELECT id FROM access_groups WHERE slug = ? LIMIT 1');
+            $stmt = $db->prepare('SELECT id FROM access_groups WHERE slug = ? AND workspace_id = ? LIMIT 1');
         } else {
-            $stmt = $db->prepare('SELECT id FROM articles WHERE slug = ? LIMIT 1');
+            $stmt = $db->prepare('SELECT id FROM articles WHERE slug = ? AND workspace_id = ? LIMIT 1');
         }
         if ($stmt === false) {
             return $slug;
         }
-        $stmt->bind_param('s', $slug);
+        $stmt->bind_param('si', $slug, $wsId);
         $stmt->execute();
         $row = $stmt->get_result()->fetch_assoc();
         $stmt->close();
@@ -195,38 +197,22 @@ function mb_markdown_to_html(string $md): string
 /** @return array{id:int,title:string}|null */
 function mb_workspace_get(): array
 {
-    $db = mb_db();
-    $res = $db->query('SELECT id, title FROM workspace WHERE id = 1 LIMIT 1');
-    if ($res instanceof mysqli_result) {
-        $row = $res->fetch_assoc();
-        $res->free();
-        if ($row !== null) {
-            return ['id' => 1, 'title' => (string) $row['title']];
-        }
+    $ws = mb_workspace_current();
+    if ($ws === null) {
+        return ['id' => 0, 'title' => 'MindBase'];
     }
 
-    return ['id' => 1, 'title' => 'MindBase — корпоративная база'];
+    return ['id' => (int) $ws['id'], 'title' => (string) $ws['title']];
 }
 
 function mb_workspace_save(string $title): ?string
 {
-    $title = trim($title);
-    if ($title === '') {
-        return 'Укажите название базы.';
+    $ws = mb_workspace_current();
+    if ($ws === null) {
+        return 'База не выбрана.';
     }
-    if (mb_strlen($title, 'UTF-8') > 255) {
-        return 'Название слишком длинное.';
-    }
-    $db = mb_db();
-    $stmt = $db->prepare('INSERT INTO workspace (id, title) VALUES (1, ?) ON DUPLICATE KEY UPDATE title = VALUES(title)');
-    if ($stmt === false) {
-        return 'Ошибка сохранения.';
-    }
-    $stmt->bind_param('s', $title);
-    $ok = $stmt->execute();
-    $stmt->close();
 
-    return $ok ? null : 'Ошибка сохранения.';
+    return mb_workspace_save_title((int) $ws['id'], $title);
 }
 
 function mb_user_update_profile(int $userId, string $name, ?string $roleTitle): ?string
@@ -293,12 +279,13 @@ function mb_user_get(int $id): ?array
 function mb_categories_list(?int $parentId = null): array
 {
     $db = mb_db();
+    $wsId = mb_ws_id();
     $vis = mb_sql_category_visible('c.id');
     if ($parentId === null) {
         $artVis = mb_sql_article_catalog_visible('a.category_id');
         $sql = "SELECT c.id, c.parent_id, c.name, c.slug, c.icon, c.description, c.sort_order,
             (SELECT COUNT(*) FROM articles a WHERE a.category_id = c.id AND {$artVis}) AS article_count
-            FROM categories c WHERE c.parent_id IS NULL AND c.slug != 'help' AND {$vis}
+            FROM categories c WHERE c.workspace_id = {$wsId} AND c.parent_id IS NULL AND c.slug != 'help' AND {$vis}
             ORDER BY c.sort_order, c.name";
         $res = $db->query($sql);
     } else {
@@ -308,11 +295,11 @@ function mb_categories_list(?int $parentId = null): array
         $artVis = mb_sql_article_catalog_visible('a.category_id');
         $stmt = $db->prepare("SELECT c.id, c.parent_id, c.name, c.slug, c.icon, c.description, c.sort_order,
             (SELECT COUNT(*) FROM articles a WHERE a.category_id = c.id AND {$artVis}) AS article_count
-            FROM categories c WHERE c.parent_id = ? AND {$vis} ORDER BY c.sort_order, c.name");
+            FROM categories c WHERE c.workspace_id = ? AND c.parent_id = ? AND {$vis} ORDER BY c.sort_order, c.name");
         if ($stmt === false) {
             return [];
         }
-        $stmt->bind_param('i', $parentId);
+        $stmt->bind_param('ii', $wsId, $parentId);
         $stmt->execute();
         $res = $stmt->get_result();
     }
@@ -341,11 +328,12 @@ function mb_categories_list(?int $parentId = null): array
 function mb_category_by_slug(string $slug): ?array
 {
     $db = mb_db();
-    $stmt = $db->prepare('SELECT id, parent_id, name, slug, icon, description FROM categories WHERE slug = ? LIMIT 1');
+    $wsId = mb_ws_id();
+    $stmt = $db->prepare('SELECT id, parent_id, name, slug, icon, description FROM categories WHERE slug = ? AND workspace_id = ? LIMIT 1');
     if ($stmt === false) {
         return null;
     }
-    $stmt->bind_param('s', $slug);
+    $stmt->bind_param('si', $slug, $wsId);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
@@ -391,19 +379,20 @@ function mb_category_ancestors(int $categoryId): array
 function mb_categories_list_all(?int $parentId = null): array
 {
     $db = mb_db();
+    $wsId = mb_ws_id();
     if ($parentId === null) {
-        $sql = 'SELECT c.id, c.parent_id, c.name, c.slug, c.icon, c.description, c.sort_order,
+        $sql = "SELECT c.id, c.parent_id, c.name, c.slug, c.icon, c.description, c.sort_order,
             (SELECT COUNT(*) FROM articles a WHERE a.category_id = c.id) AS article_count
-            FROM categories c WHERE c.parent_id IS NULL ORDER BY c.sort_order, c.name';
+            FROM categories c WHERE c.workspace_id = {$wsId} AND c.parent_id IS NULL ORDER BY c.sort_order, c.name";
         $res = $db->query($sql);
     } else {
         $stmt = $db->prepare('SELECT c.id, c.parent_id, c.name, c.slug, c.icon, c.description, c.sort_order,
             (SELECT COUNT(*) FROM articles a WHERE a.category_id = c.id) AS article_count
-            FROM categories c WHERE c.parent_id = ? ORDER BY c.sort_order, c.name');
+            FROM categories c WHERE c.workspace_id = ? AND c.parent_id = ? ORDER BY c.sort_order, c.name');
         if ($stmt === false) {
             return [];
         }
-        $stmt->bind_param('i', $parentId);
+        $stmt->bind_param('ii', $wsId, $parentId);
         $stmt->execute();
         $res = $stmt->get_result();
     }
@@ -433,8 +422,9 @@ function mb_categories_list_all(?int $parentId = null): array
 function mb_category_tree(): array
 {
     $visibleIds = array_flip(mb_visible_category_ids());
+    $wsId = mb_ws_id();
     $db = mb_db();
-    $res = $db->query("SELECT id, parent_id, name, slug FROM categories WHERE slug != 'help' ORDER BY sort_order, name");
+    $res = $db->query("SELECT id, parent_id, name, slug FROM categories WHERE workspace_id = {$wsId} AND slug != 'help' ORDER BY sort_order, name");
     if (!$res instanceof mysqli_result) {
         return [];
     }
@@ -537,28 +527,29 @@ function mb_document_row_map(array $row): array
 function mb_catalog_stats(): array
 {
     $db = mb_db();
+    $wsId = mb_ws_id();
     $vis = mb_sql_article_catalog_visible('a.category_id');
     $catVis = mb_sql_category_visible('c.id');
     $articles = 0;
     $categories = 0;
     $tags = 0;
     $today = 0;
-    $r = $db->query("SELECT COUNT(*) AS c FROM articles a WHERE {$vis}");
+    $r = $db->query("SELECT COUNT(*) AS c FROM articles a WHERE a.workspace_id = {$wsId} AND {$vis}");
     if ($r instanceof mysqli_result) {
         $articles = (int) ($r->fetch_assoc()['c'] ?? 0);
         $r->free();
     }
-    $r = $db->query("SELECT COUNT(*) AS c FROM categories c WHERE c.slug != 'help' AND {$catVis}");
+    $r = $db->query("SELECT COUNT(*) AS c FROM categories c WHERE c.workspace_id = {$wsId} AND c.slug != 'help' AND {$catVis}");
     if ($r instanceof mysqli_result) {
         $categories = (int) ($r->fetch_assoc()['c'] ?? 0);
         $r->free();
     }
-    $r = $db->query('SELECT COUNT(*) AS c FROM tags');
+    $r = $db->query("SELECT COUNT(*) AS c FROM tags WHERE workspace_id = {$wsId}");
     if ($r instanceof mysqli_result) {
         $tags = (int) ($r->fetch_assoc()['c'] ?? 0);
         $r->free();
     }
-    $r = $db->query("SELECT COUNT(*) AS c FROM articles a WHERE {$vis} AND DATE(a.updated_at) = CURDATE()");
+    $r = $db->query("SELECT COUNT(*) AS c FROM articles a WHERE a.workspace_id = {$wsId} AND {$vis} AND DATE(a.updated_at) = CURDATE()");
     if ($r instanceof mysqli_result) {
         $today = (int) ($r->fetch_assoc()['c'] ?? 0);
         $r->free();
@@ -571,6 +562,7 @@ function mb_catalog_stats(): array
 function mb_articles_recent(int $limit = 5, bool $helpOnly = false): array
 {
     $db = mb_db();
+    $wsId = mb_ws_id();
     $help = $helpOnly ? 1 : 0;
     $vis = mb_sql_category_visible('a.category_id');
     $stmt = $db->prepare(
@@ -579,13 +571,13 @@ function mb_articles_recent(int $limit = 5, bool $helpOnly = false): array
         FROM articles a
         JOIN categories c ON c.id = a.category_id
         JOIN users u ON u.id = a.author_id
-        WHERE a.is_help = ? AND (a.is_help = 1 OR {$vis})
+        WHERE a.workspace_id = ? AND a.is_help = ? AND (a.is_help = 1 OR {$vis})
         ORDER BY a.updated_at DESC LIMIT ?"
     );
     if ($stmt === false) {
         return [];
     }
-    $stmt->bind_param('ii', $help, $limit);
+    $stmt->bind_param('iii', $wsId, $help, $limit);
     $stmt->execute();
     $res = $stmt->get_result();
     $rows = [];
@@ -617,6 +609,7 @@ function mb_article_row_map(array $row): array
 function mb_articles_by_category(int $categoryId, int $limit = 50): array
 {
     $db = mb_db();
+    $wsId = mb_ws_id();
     if (!mb_user_can_view_category($categoryId)) {
         return [];
     }
@@ -626,13 +619,13 @@ function mb_articles_by_category(int $categoryId, int $limit = 50): array
         FROM articles a
         JOIN categories c ON c.id = a.category_id
         JOIN users u ON u.id = a.author_id
-        WHERE a.category_id = ?
+        WHERE a.workspace_id = ? AND a.category_id = ?
         ORDER BY a.updated_at DESC LIMIT ?'
     );
     if ($stmt === false) {
         return [];
     }
-    $stmt->bind_param('ii', $categoryId, $limit);
+    $stmt->bind_param('iii', $wsId, $categoryId, $limit);
     $stmt->execute();
     $res = $stmt->get_result();
     $rows = [];
@@ -648,6 +641,7 @@ function mb_articles_by_category(int $categoryId, int $limit = 50): array
 function mb_article_by_slug(string $slug): ?array
 {
     $db = mb_db();
+    $wsId = mb_ws_id();
     $stmt = $db->prepare(
         'SELECT a.id, a.category_id, a.author_id, a.title, a.slug, a.excerpt, a.body, a.is_help,
         a.views_count, a.created_at, a.updated_at,
@@ -656,12 +650,12 @@ function mb_article_by_slug(string $slug): ?array
         FROM articles a
         JOIN categories c ON c.id = a.category_id
         JOIN users u ON u.id = a.author_id
-        WHERE a.slug = ? LIMIT 1'
+        WHERE a.slug = ? AND a.workspace_id = ? LIMIT 1'
     );
     if ($stmt === false) {
         return null;
     }
-    $stmt->bind_param('s', $slug);
+    $stmt->bind_param('si', $slug, $wsId);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
@@ -736,6 +730,7 @@ function mb_search_articles(string $q, int $limit = 30, ?int $categoryId = null)
         return [];
     }
     $db = mb_db();
+    $wsId = mb_ws_id();
     $vis = mb_sql_category_visible('a.category_id');
     $like = '%' . $db->real_escape_string($q) . '%';
     $catFilter = '';
@@ -747,7 +742,8 @@ function mb_search_articles(string $q, int $limit = 30, ?int $categoryId = null)
         FROM articles a
         JOIN categories c ON c.id = a.category_id
         JOIN users u ON u.id = a.author_id
-        WHERE (a.is_help = 1 OR {$vis})
+        WHERE a.workspace_id = {$wsId}
+        AND (a.is_help = 1 OR {$vis})
         AND (a.title LIKE '{$like}' OR a.excerpt LIKE '{$like}' OR a.body LIKE '{$like}')
         {$catFilter}
         ORDER BY a.updated_at DESC LIMIT " . (int) $limit;
@@ -794,30 +790,33 @@ function mb_search_highlight(string $text, string $q): string
 function mb_dashboard_stats(): array
 {
     $db = mb_db();
+    $wsId = mb_ws_id();
     $vis = mb_sql_article_catalog_visible('a.category_id');
     $articles = 0;
     $categories = 0;
     $team = 0;
     $views = 0;
-    $r = $db->query("SELECT COUNT(*) AS c FROM articles a WHERE {$vis}");
+    $r = $db->query("SELECT COUNT(*) AS c FROM articles a WHERE a.workspace_id = {$wsId} AND {$vis}");
     if ($r instanceof mysqli_result) {
         $articles = (int) ($r->fetch_assoc()['c'] ?? 0);
         $r->free();
     }
-    $r = $db->query("SELECT COUNT(DISTINCT a.category_id) AS c FROM articles a WHERE {$vis}");
+    $r = $db->query("SELECT COUNT(DISTINCT a.category_id) AS c FROM articles a WHERE a.workspace_id = {$wsId} AND {$vis}");
     if ($r instanceof mysqli_result) {
         $categories = (int) ($r->fetch_assoc()['c'] ?? 0);
         $r->free();
     }
-    $r = $db->query('SELECT COUNT(*) AS c FROM users');
-    if ($r instanceof mysqli_result) {
-        $team = (int) ($r->fetch_assoc()['c'] ?? 0);
-        $r->free();
+    $stmt = $db->prepare('SELECT COUNT(*) AS c FROM workspace_members WHERE workspace_id = ?');
+    if ($stmt !== false) {
+        $stmt->bind_param('i', $wsId);
+        $stmt->execute();
+        $team = (int) ($stmt->get_result()->fetch_assoc()['c'] ?? 0);
+        $stmt->close();
     }
     $r = $db->query(
         "SELECT COUNT(*) AS c FROM article_views v
         INNER JOIN articles a ON a.id = v.article_id
-        WHERE {$vis} AND v.viewed_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)"
+        WHERE a.workspace_id = {$wsId} AND {$vis} AND v.viewed_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)"
     );
     if ($r instanceof mysqli_result) {
         $views = (int) ($r->fetch_assoc()['c'] ?? 0);
@@ -870,18 +869,19 @@ function mb_article_save(
         return ['error' => 'Добавьте текст статьи.'];
     }
     $db = mb_db();
+    $wsId = mb_ws_id();
     $baseSlug = mb_unique_slug($db, mb_slugify($title));
     $help = $isHelp ? 1 : 0;
 
     if ($id === null) {
         $stmt = $db->prepare(
-            'INSERT INTO articles (category_id, author_id, title, slug, excerpt, body, is_help)
-            VALUES (?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO articles (workspace_id, category_id, author_id, title, slug, excerpt, body, is_help)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         );
         if ($stmt === false) {
             return ['error' => 'Ошибка сохранения.'];
         }
-        $stmt->bind_param('iissssi', $categoryId, $authorId, $title, $baseSlug, $excerpt, $body, $help);
+        $stmt->bind_param('iiissssi', $wsId, $categoryId, $authorId, $title, $baseSlug, $excerpt, $body, $help);
         if (!$stmt->execute()) {
             $stmt->close();
 
@@ -922,11 +922,12 @@ function mb_article_save(
 function mb_article_by_id(int $id): ?array
 {
     $db = mb_db();
-    $stmt = $db->prepare('SELECT slug, title FROM articles WHERE id = ? LIMIT 1');
+    $wsId = mb_ws_id();
+    $stmt = $db->prepare('SELECT slug, title FROM articles WHERE id = ? AND workspace_id = ? LIMIT 1');
     if ($stmt === false) {
         return null;
     }
-    $stmt->bind_param('i', $id);
+    $stmt->bind_param('ii', $id, $wsId);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
@@ -941,9 +942,10 @@ function mb_article_by_id(int $id): ?array
 function mb_documents_list(): array
 {
     $db = mb_db();
+    $wsId = mb_ws_id();
     $vis = mb_sql_document_visible('d.id');
     $res = $db->query("SELECT d.id, d.title, d.file_type, d.stored_name, d.size_bytes, d.owner_label, d.folder_path, d.updated_at
-        FROM documents d WHERE {$vis} ORDER BY d.updated_at DESC");
+        FROM documents d WHERE d.workspace_id = {$wsId} AND {$vis} ORDER BY d.updated_at DESC");
     if (!$res instanceof mysqli_result) {
         return [];
     }
@@ -960,13 +962,14 @@ function mb_documents_list(): array
 function mb_document_by_id(int $id): ?array
 {
     $db = mb_db();
+    $wsId = mb_ws_id();
     $vis = mb_sql_document_visible('d.id');
     $stmt = $db->prepare("SELECT d.id, d.title, d.file_type, d.stored_name, d.mime_type, d.size_bytes,
-        d.owner_label, d.folder_path, d.updated_at FROM documents d WHERE d.id = ? AND {$vis} LIMIT 1");
+        d.owner_label, d.folder_path, d.updated_at FROM documents d WHERE d.id = ? AND d.workspace_id = ? AND {$vis} LIMIT 1");
     if ($stmt === false) {
         return null;
     }
-    $stmt->bind_param('i', $id);
+    $stmt->bind_param('ii', $id, $wsId);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
@@ -1042,6 +1045,7 @@ function mb_document_upload(int $userId, array $file, string $title, string $own
         return ['error' => 'Не удалось сохранить файл. Проверьте права на каталог storage/documents.'];
     }
     $db = mb_db();
+    $wsId = mb_ws_id();
     $size = (int) filesize($dest);
     $ftype = strtoupper($ext);
     $folderPath = trim($folderPath) !== '' ? trim($folderPath) : '/';
@@ -1049,14 +1053,14 @@ function mb_document_upload(int $userId, array $file, string $title, string $own
         $folderPath = '/' . $folderPath;
     }
     $mime = $mimeMap[$ext] ?? 'application/octet-stream';
-    $stmt = $db->prepare('INSERT INTO documents (title, file_type, stored_name, mime_type, size_bytes, owner_label, folder_path, uploaded_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    $stmt = $db->prepare('INSERT INTO documents (workspace_id, title, file_type, stored_name, mime_type, size_bytes, owner_label, folder_path, uploaded_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
     if ($stmt === false) {
         @unlink($dest);
 
         return ['error' => 'Ошибка БД.'];
     }
-    $stmt->bind_param('ssssissi', $title, $ftype, $stored, $mime, $size, $ownerLabel, $folderPath, $userId);
+    $stmt->bind_param('issssissi', $wsId, $title, $ftype, $stored, $mime, $size, $ownerLabel, $folderPath, $userId);
     if (!$stmt->execute()) {
         @unlink($dest);
         $stmt->close();
@@ -1078,8 +1082,9 @@ function mb_document_delete(int $id): ?string
     $doc = mb_document_by_id($id);
     if ($doc === null && mb_is_admin()) {
         $db = mb_db();
-        $stmt = $db->prepare('SELECT stored_name FROM documents WHERE id = ?');
-        $stmt->bind_param('i', $id);
+        $wsId = mb_ws_id();
+        $stmt = $db->prepare('SELECT stored_name FROM documents WHERE id = ? AND workspace_id = ?');
+        $stmt->bind_param('ii', $id, $wsId);
         $stmt->execute();
         $row = $stmt->get_result()->fetch_assoc();
         $stmt->close();
@@ -1147,11 +1152,12 @@ function mb_category_save(
 
         return ['id' => $id, 'slug' => $slug];
     }
-    $stmt = $db->prepare('INSERT INTO categories (parent_id, name, slug, icon, description, sort_order) VALUES (?, ?, ?, ?, ?, ?)');
+    $stmt = $db->prepare('INSERT INTO categories (workspace_id, parent_id, name, slug, icon, description, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)');
     if ($stmt === false) {
         return ['error' => 'Ошибка сохранения.'];
     }
-    $stmt->bind_param('issssi', $parentId, $name, $slug, $icon, $description, $sortOrder);
+    $wsId = mb_ws_id();
+    $stmt->bind_param('iissssi', $wsId, $parentId, $name, $slug, $icon, $description, $sortOrder);
     $stmt->execute();
     $newId = (int) $stmt->insert_id;
     $stmt->close();
@@ -1166,11 +1172,12 @@ function mb_category_save(
 function mb_category_by_id(int $id): ?array
 {
     $db = mb_db();
-    $stmt = $db->prepare('SELECT id, parent_id, name, slug, icon, description, sort_order FROM categories WHERE id = ? LIMIT 1');
+    $wsId = mb_ws_id();
+    $stmt = $db->prepare('SELECT id, parent_id, name, slug, icon, description, sort_order FROM categories WHERE id = ? AND workspace_id = ? LIMIT 1');
     if ($stmt === false) {
         return null;
     }
-    $stmt->bind_param('i', $id);
+    $stmt->bind_param('ii', $id, $wsId);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
@@ -1245,8 +1252,9 @@ function mb_documents_stats(): array
 function mb_document_folders(): array
 {
     $db = mb_db();
+    $wsId = mb_ws_id();
     $vis = mb_sql_document_visible('d.id');
-    $res = $db->query("SELECT DISTINCT d.folder_path FROM documents d WHERE {$vis} ORDER BY d.folder_path");
+    $res = $db->query("SELECT DISTINCT d.folder_path FROM documents d WHERE d.workspace_id = {$wsId} AND {$vis} ORDER BY d.folder_path");
     if (!$res instanceof mysqli_result) {
         return [];
     }
@@ -1263,11 +1271,13 @@ function mb_document_folders(): array
 function mb_courses_list(int $userId): array
 {
     $db = mb_db();
+    $wsId = mb_ws_id();
     $res = $db->query(
         'SELECT c.id, c.title, c.description, c.course_type, c.duration_minutes, c.author_label,
         COALESCE(p.progress_percent, 0) AS progress_percent
         FROM courses c
         LEFT JOIN course_progress p ON p.course_id = c.id AND p.user_id = ' . (int) $userId . '
+        WHERE c.workspace_id = ' . (int) $wsId . '
         ORDER BY c.sort_order, c.id'
     );
     if (!$res instanceof mysqli_result) {
@@ -1312,17 +1322,18 @@ function mb_course_update_progress(int $userId, int $courseId, int $percent): ?s
 function mb_course_by_id(int $courseId, int $userId): ?array
 {
     $db = mb_db();
+    $wsId = mb_ws_id();
     $stmt = $db->prepare(
         'SELECT c.id, c.title, c.description, c.course_type, c.duration_minutes, c.author_label,
         COALESCE(p.progress_percent, 0) AS progress_percent
         FROM courses c
         LEFT JOIN course_progress p ON p.course_id = c.id AND p.user_id = ?
-        WHERE c.id = ? LIMIT 1'
+        WHERE c.id = ? AND c.workspace_id = ? LIMIT 1'
     );
     if ($stmt === false) {
         return null;
     }
-    $stmt->bind_param('ii', $userId, $courseId);
+    $stmt->bind_param('iii', $userId, $courseId, $wsId);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
@@ -1433,14 +1444,17 @@ function mb_course_sync_progress_from_lessons(int $userId, int $courseId): void
 function mb_learning_stats(int $userId): array
 {
     $db = mb_db();
+    $wsId = mb_ws_id();
     $courses = 0;
-    $r = $db->query('SELECT COUNT(*) AS c FROM courses');
+    $r = $db->query("SELECT COUNT(*) AS c FROM courses WHERE workspace_id = {$wsId}");
     if ($r instanceof mysqli_result) {
         $courses = (int) ($r->fetch_assoc()['c'] ?? 0);
         $r->free();
     }
     $lessons = 0;
-    $r2 = $db->query('SELECT COUNT(*) AS c FROM course_lessons');
+    $r2 = $db->query(
+        "SELECT COUNT(*) AS c FROM course_lessons l INNER JOIN courses c ON c.id = l.course_id WHERE c.workspace_id = {$wsId}"
+    );
     if ($r2 instanceof mysqli_result) {
         $lessons = (int) ($r2->fetch_assoc()['c'] ?? 0);
         $r2->free();
@@ -1449,10 +1463,11 @@ function mb_learning_stats(int $userId): array
     $stmt = $db->prepare(
         'SELECT COALESCE(AVG(COALESCE(p.progress_percent, 0)), 0) AS a
         FROM courses c
-        LEFT JOIN course_progress p ON p.course_id = c.id AND p.user_id = ?'
+        LEFT JOIN course_progress p ON p.course_id = c.id AND p.user_id = ?
+        WHERE c.workspace_id = ?'
     );
     if ($stmt !== false) {
-        $stmt->bind_param('i', $userId);
+        $stmt->bind_param('ii', $userId, $wsId);
         $stmt->execute();
         $row = $stmt->get_result()->fetch_assoc();
         $avg = (int) round((float) ($row['a'] ?? 0));
@@ -1494,14 +1509,15 @@ function mb_course_types(): array
 function mb_course_get(int $courseId): ?array
 {
     $db = mb_db();
+    $wsId = mb_ws_id();
     $stmt = $db->prepare(
         'SELECT id, title, description, course_type, duration_minutes, author_label, sort_order
-        FROM courses WHERE id = ? LIMIT 1'
+        FROM courses WHERE id = ? AND workspace_id = ? LIMIT 1'
     );
     if ($stmt === false) {
         return null;
     }
-    $stmt->bind_param('i', $courseId);
+    $stmt->bind_param('ii', $courseId, $wsId);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
@@ -1584,8 +1600,9 @@ function mb_course_lesson_get(int $lessonId): ?array
 function mb_article_slug_options(): array
 {
     $db = mb_db();
+    $wsId = mb_ws_id();
     $vis = mb_sql_article_catalog_visible('a.category_id');
-    $res = $db->query("SELECT a.slug, a.title FROM articles a WHERE {$vis} ORDER BY a.title");
+    $res = $db->query("SELECT a.slug, a.title FROM articles a WHERE a.workspace_id = {$wsId} AND {$vis} ORDER BY a.title");
     if (!$res instanceof mysqli_result) {
         return [];
     }
@@ -1659,12 +1676,13 @@ function mb_course_save(
         return ['id' => $id];
     }
     $stmt = $db->prepare(
-        'INSERT INTO courses (title, description, course_type, duration_minutes, author_label, sort_order) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO courses (workspace_id, title, description, course_type, duration_minutes, author_label, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)'
     );
     if ($stmt === false) {
         return ['error' => 'Ошибка сохранения.'];
     }
-    $stmt->bind_param('sssisi', $title, $description, $courseType, $durationMinutes, $authorLabel, $sortOrder);
+    $wsId = mb_ws_id();
+    $stmt->bind_param('isssisi', $wsId, $title, $description, $courseType, $durationMinutes, $authorLabel, $sortOrder);
     $stmt->execute();
     $newId = (int) $stmt->insert_id;
     $stmt->close();
@@ -1792,8 +1810,9 @@ function mb_format_duration(int $minutes): string
 function mb_export_articles(): array
 {
     $db = mb_db();
+    $wsId = mb_ws_id();
     $vis = mb_sql_category_visible('a.category_id');
-    $res = $db->query("SELECT a.id, a.title, a.slug, a.body, a.updated_at FROM articles a WHERE {$vis} ORDER BY a.id");
+    $res = $db->query("SELECT a.id, a.title, a.slug, a.body, a.updated_at FROM articles a WHERE a.workspace_id = {$wsId} AND {$vis} ORDER BY a.id");
     if (!$res instanceof mysqli_result) {
         return [];
     }

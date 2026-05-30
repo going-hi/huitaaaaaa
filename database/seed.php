@@ -78,6 +78,7 @@ if ($link === false) {
 }
 
 mb_run_sql_file($link, $tablesSqlPath);
+require __DIR__ . '/migrate_workspaces.php';
 mb_ensure_column($link, 'users', 'role_title', 'ALTER TABLE users ADD COLUMN role_title VARCHAR(120) NULL DEFAULT NULL AFTER password_hash');
 mb_ensure_column($link, 'users', 'role', "ALTER TABLE users ADD COLUMN role ENUM('admin','editor','user') NOT NULL DEFAULT 'user' AFTER password_hash");
 mb_ensure_column($link, 'documents', 'stored_name', 'ALTER TABLE documents ADD COLUMN stored_name VARCHAR(255) NULL DEFAULT NULL AFTER file_type');
@@ -114,8 +115,28 @@ $stmtUser->close();
 $adminId = $userIds['admin@mindbase.local'] ?? 1;
 $mariaId = $userIds['maria@mindbase.local'] ?? $adminId;
 
-$link->query("INSERT INTO workspace (id, title) VALUES (1, 'Команда «Инним» — внутренняя база')
-    ON DUPLICATE KEY UPDATE title = VALUES(title)");
+$demoWsId = 1;
+$inviteToken = bin2hex(random_bytes(32));
+$wsTitle = 'Команда «Инним» — внутренняя база';
+$link->query("INSERT INTO workspaces (id, title, slug, owner_id, invite_token) VALUES ({$demoWsId}, '"
+    . $link->real_escape_string($wsTitle) . "', 'innim-demo', {$adminId}, '"
+    . $link->real_escape_string($inviteToken) . "')
+    ON DUPLICATE KEY UPDATE title = VALUES(title), owner_id = VALUES(owner_id)");
+
+$workspaceMembers = [
+    'admin@mindbase.local' => 'owner',
+    'editor@mindbase.local' => 'admin',
+    'demo@mindbase.local' => 'user',
+    'maria@mindbase.local' => 'editor',
+    'andrey@mindbase.local' => 'user',
+];
+foreach ($workspaceMembers as $email => $role) {
+    if (!isset($userIds[$email])) {
+        continue;
+    }
+    $uid = $userIds[$email];
+    $link->query("INSERT IGNORE INTO workspace_members (workspace_id, user_id, role) VALUES ({$demoWsId}, {$uid}, '{$role}')");
+}
 
 $accessGroupsSeed = [
     ['Разработка', 'developers', 'Инженеры, DevOps, QA'],
@@ -125,12 +146,12 @@ $accessGroupsSeed = [
 ];
 $groupIds = [];
 foreach ($accessGroupsSeed as [$gname, $gslug, $gdesc]) {
-    $link->query("INSERT INTO access_groups (name, slug, description) VALUES ('"
+    $link->query("INSERT INTO access_groups (workspace_id, name, slug, description) VALUES ({$demoWsId}, '"
         . $link->real_escape_string($gname) . "', '"
         . $link->real_escape_string($gslug) . "', '"
         . $link->real_escape_string($gdesc) . "')
         ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description)");
-    $r = $link->query("SELECT id FROM access_groups WHERE slug = '" . $link->real_escape_string($gslug) . "' LIMIT 1");
+    $r = $link->query("SELECT id FROM access_groups WHERE workspace_id = {$demoWsId} AND slug = '" . $link->real_escape_string($gslug) . "' LIMIT 1");
     if ($r instanceof mysqli_result) {
         $groupIds[$gslug] = (int) $r->fetch_assoc()['id'];
         $r->free();
@@ -152,13 +173,13 @@ $categories = [
 ];
 
 $catIds = [];
-$stmtCat = $link->prepare('INSERT INTO categories (slug, parent_id, name, icon, description, sort_order) VALUES (?, ?, ?, ?, ?, ?)
+$stmtCat = $link->prepare('INSERT INTO categories (workspace_id, slug, parent_id, name, icon, description, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE name = VALUES(name), icon = VALUES(icon), description = VALUES(description), sort_order = VALUES(sort_order)');
 foreach ($categories as [$slug, $parent, $name, $icon, $desc, $sort]) {
     $parentVal = null;
-    $stmtCat->bind_param('sisssi', $slug, $parentVal, $name, $icon, $desc, $sort);
+    $stmtCat->bind_param('isisssi', $demoWsId, $slug, $parentVal, $name, $icon, $desc, $sort);
     $stmtCat->execute();
-    $r = $link->query("SELECT id FROM categories WHERE slug = '" . $link->real_escape_string($slug) . "' LIMIT 1");
+    $r = $link->query("SELECT id FROM categories WHERE workspace_id = {$demoWsId} AND slug = '" . $link->real_escape_string($slug) . "' LIMIT 1");
     if ($r instanceof mysqli_result) {
         $catIds[$slug] = (int) $r->fetch_assoc()['id'];
         $r->free();
@@ -181,15 +202,15 @@ $children = [
     ['corp-hr', 'corp', 'HR: отпуска, бенефиты', 1],
     ['corp-office', 'corp', 'Закупки и офис', 2],
 ];
-$stmtChild = $link->prepare('INSERT INTO categories (slug, parent_id, name, icon, description, sort_order) VALUES (?, ?, ?, ?, ?, ?)
+$stmtChild = $link->prepare('INSERT INTO categories (workspace_id, slug, parent_id, name, icon, description, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE parent_id = VALUES(parent_id), name = VALUES(name), sort_order = VALUES(sort_order)');
 foreach ($children as [$slug, $parentSlug, $name, $sort]) {
     $pid = $catIds[$parentSlug] ?? null;
     $icon = '📄';
     $desc = '';
-    $stmtChild->bind_param('sisssi', $slug, $pid, $name, $icon, $desc, $sort);
+    $stmtChild->bind_param('isisssi', $demoWsId, $slug, $pid, $name, $icon, $desc, $sort);
     $stmtChild->execute();
-    $r = $link->query("SELECT id FROM categories WHERE slug = '" . $link->real_escape_string($slug) . "' LIMIT 1");
+    $r = $link->query("SELECT id FROM categories WHERE workspace_id = {$demoWsId} AND slug = '" . $link->real_escape_string($slug) . "' LIMIT 1");
     if ($r instanceof mysqli_result) {
         $catIds[$slug] = (int) $r->fetch_assoc()['id'];
         $r->free();
@@ -201,9 +222,9 @@ $tags = ['онбординг', 'api', 'инцидент', 'поддержка', 
 $tagIds = [];
 foreach ($tags as $t) {
     $slug = preg_replace('/[^a-z0-9]+/', '-', mb_strtolower($t, 'UTF-8')) ?: $t;
-    $link->query("INSERT INTO tags (name, slug) VALUES ('" . $link->real_escape_string($t) . "', '" . $link->real_escape_string($slug) . "')
+    $link->query("INSERT INTO tags (workspace_id, name, slug) VALUES ({$demoWsId}, '" . $link->real_escape_string($t) . "', '" . $link->real_escape_string($slug) . "')
         ON DUPLICATE KEY UPDATE name = VALUES(name)");
-    $r = $link->query("SELECT id FROM tags WHERE slug = '" . $link->real_escape_string($slug) . "' LIMIT 1");
+    $r = $link->query("SELECT id FROM tags WHERE workspace_id = {$demoWsId} AND slug = '" . $link->real_escape_string($slug) . "' LIMIT 1");
     if ($r instanceof mysqli_result) {
         $tagIds[$t] = (int) $r->fetch_assoc()['id'];
         $r->free();
@@ -225,13 +246,13 @@ $articles = [
     ['export-help', 'help', $adminId, 'Экспорт данных', 'Выгрузка контента.', "В **настройках** доступен экспорт в Markdown.", 1, []],
 ];
 
-$stmtArt = $link->prepare('INSERT INTO articles (slug, category_id, author_id, title, excerpt, body, is_help) VALUES (?, ?, ?, ?, ?, ?, ?)
+$stmtArt = $link->prepare('INSERT INTO articles (workspace_id, slug, category_id, author_id, title, excerpt, body, is_help) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE category_id = VALUES(category_id), title = VALUES(title), excerpt = VALUES(excerpt), body = VALUES(body), is_help = VALUES(is_help)');
 $stmtTagLink = $link->prepare('INSERT IGNORE INTO article_tags (article_id, tag_id) VALUES (?, ?)');
 
 foreach ($articles as [$slug, $catSlug, $authorId, $title, $excerpt, $body, $isHelp, $tagList]) {
     $cid = $catIds[$catSlug] ?? $catIds['onboarding'];
-    $stmtArt->bind_param('siisssi', $slug, $cid, $authorId, $title, $excerpt, $body, $isHelp);
+    $stmtArt->bind_param('isiisssi', $demoWsId, $slug, $cid, $authorId, $title, $excerpt, $body, $isHelp);
     $stmtArt->execute();
     $r = $link->query("SELECT id FROM articles WHERE slug = '" . $link->real_escape_string($slug) . "' LIMIT 1");
     if (!$r instanceof mysqli_result) {
@@ -264,7 +285,7 @@ $docs = [
 ];
 $link->query('DELETE FROM document_access_groups');
 $link->query('DELETE FROM documents');
-$stmtDoc = $link->prepare('INSERT INTO documents (title, file_type, stored_name, mime_type, size_bytes, owner_label, folder_path, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+$stmtDoc = $link->prepare('INSERT INTO documents (workspace_id, title, file_type, stored_name, mime_type, size_bytes, owner_label, folder_path, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
 $docIds = [];
 foreach ($docs as $i => $d) {
     $ext = strtolower($d[1]);
@@ -278,7 +299,7 @@ foreach ($docs as $i => $d) {
         'csv' => 'text/csv',
         default => 'text/plain',
     };
-    $stmtDoc->bind_param('ssssissi', $d[0], $d[1], $stored, $mime, $size, $d[3], $d[4], $adminId);
+    $stmtDoc->bind_param('issssissi', $demoWsId, $d[0], $d[1], $stored, $mime, $size, $d[3], $d[4], $adminId);
     $stmtDoc->execute();
     $docIds[] = (int) $link->insert_id;
 }
@@ -354,9 +375,9 @@ $courses = [
 ];
 $link->query('DELETE FROM courses');
 $courseIds = [];
-$stmtCourse = $link->prepare('INSERT INTO courses (title, description, course_type, duration_minutes, author_label, sort_order) VALUES (?, ?, ?, ?, ?, ?)');
+$stmtCourse = $link->prepare('INSERT INTO courses (workspace_id, title, description, course_type, duration_minutes, author_label, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)');
 foreach ($courses as $c) {
-    $stmtCourse->bind_param('sssisi', $c[0], $c[1], $c[2], $c[3], $c[4], $c[5]);
+    $stmtCourse->bind_param('isssisi', $demoWsId, $c[0], $c[1], $c[2], $c[3], $c[4], $c[5]);
     $stmtCourse->execute();
     $courseIds[] = (int) $link->insert_id;
 }
