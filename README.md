@@ -9,11 +9,33 @@ docker compose up -d --build
 docker compose exec php php database/seed.php
 ```
 
-Откройте http://localhost (локально) или http://mindbase-innim.ru (production).
+Откройте http://localhost:8081 (локально, Docker) или https://mindbase-innim.ru (production за nginx).
 
-HTTPS настраивается отдельно на сервере (nginx/Caddy и т.п.) — в compose только HTTP на порту 80.
+phpMyAdmin: http://127.0.0.1:8080 на сервере или SSH-туннель (см. ниже).
 
-phpMyAdmin: http://localhost:8080 (на сервере — порт 8080 или SSH-туннель).
+### HTTPS (nginx + Let's Encrypt на сервере)
+
+Docker **не** занимает порт 80/443 — только `127.0.0.1:8081`. Nginx на хосте принимает HTTPS.
+
+1. `git pull` и `docker compose up -d --build`
+2. Установить nginx + certbot: `sudo apt install -y nginx certbot python3-certbot-nginx`
+3. Скопировать конфиг:
+   ```bash
+   sudo cp docker/nginx/mindbase-innim.ru.conf /etc/nginx/sites-available/mindbase-innim.ru
+   sudo ln -sf /etc/nginx/sites-available/mindbase-innim.ru /etc/nginx/sites-enabled/
+   sudo rm -f /etc/nginx/sites-enabled/default
+   sudo nginx -t && sudo systemctl reload nginx
+   ```
+4. Проверка: `curl -I http://mindbase-innim.ru` → ответ от nginx
+5. Сертификат:
+   ```bash
+   sudo certbot --nginx -d mindbase-innim.ru --register-unsafely-without-email --agree-tos
+   ```
+6. В `docker-compose.yml`: `MB_SITE_URL: https://mindbase-innim.ru`, затем `docker compose up -d php`
+
+Если certbot пишет `bind() to 0.0.0.0:80 failed` — порт 80 занят Docker. Выполните `sudo ss -tlnp | grep ':80 '` и убедитесь, что после `git pull` php слушает **8081**, не 80.
+
+### phpMyAdmin
 
 **Два шага входа:**
 
@@ -79,5 +101,6 @@ MB_SITE_URL: http://mindbase-innim.ru
 
 - `database/tables.sql` — схема БД
 - `database/seed.php` — демо-данные
+- `docker/nginx/mindbase-innim.ru.conf` — пример nginx для HTTPS
 - `lib/knowledge.php` — работа с контентом
 - `lib/auth.php` — пользователи и сессии

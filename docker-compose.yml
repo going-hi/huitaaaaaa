@@ -51,7 +51,7 @@ services:
     container_name: mindbase-php
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "127.0.0.1:8081:80"
     volumes:
       - .:/var/www/html
     environment:
@@ -60,7 +60,7 @@ services:
       MYSQL_USER: mindbase
       MYSQL_PASSWORD: mindbase
       MYSQL_DATABASE: mindbase
-      MB_SITE_URL: http://mindbase-innim.ru
+      MB_SITE_URL: https://mindbase-innim.ru
     depends_on:
       mysql:
         condition: service_healthy
@@ -72,7 +72,7 @@ services:
     container_name: mindbase-phpmyadmin
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "127.0.0.1:8080:80"
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
