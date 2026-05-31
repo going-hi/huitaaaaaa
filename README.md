@@ -9,34 +9,48 @@ docker compose up -d --build
 docker compose exec php php database/seed.php
 ```
 
-Откройте http://localhost (локально) или http://mindbase-innim.ru (production).
+| Среда | Адрес |
+|-------|--------|
+| Локально | http://localhost |
+| Production | https://mindbase-innim.ru |
 
-phpMyAdmin: http://localhost:8080 (на сервере — порт 8080 или SSH-туннель, см. ниже).
+HTTPS на production: **Caddy** автоматически получает и обновляет сертификаты **Let's Encrypt**.
 
-**Два шага входа:**
+### HTTPS (production)
 
-1. **HTTP-пароль** (защита самого phpMyAdmin): логин `pma`, пароль `MindBasePma!`
-2. **MySQL** (форма phpMyAdmin): `mindbase` / `mindbase` или `root` / `root`
+1. DNS **A-запись**: `mindbase-innim.ru` → IP сервера  
+2. Открыты порты **80** и **443** на сервере и в панели хостинга  
+3. Запуск: `docker compose up -d --build`  
+4. Caddy сам выпустит сертификат (1–2 минуты после первого запроса)
 
-Сменить HTTP-пароль: `htpasswd -B docker/phpmyadmin/.htpasswd pma`, затем `docker compose up -d phpmyadmin`.
+Сертификаты хранятся в Docker-томе `caddy_data`, продление автоматическое.
 
-**SSH-туннель** (без открытия 8080 наружу):
+Публичный URL для SEO:
+
+```yaml
+MB_SITE_URL: https://mindbase-innim.ru
+```
+
+### phpMyAdmin
+
+**Production (HTTPS):** https://pma.mindbase-innim.ru — нужна A-запись `pma` → IP сервера.
+
+**SSH-туннель** (порт 8080 только на localhost сервера):
 
 ```bash
 ssh -L 8080:127.0.0.1:8080 user@сервер
 ```
 
-После этого открой http://localhost:8080
+Затем http://localhost:8080
 
-### SEO и продвижение
+**Два шага входа:**
 
-Публичный URL сайта задан в `docker-compose.yml`:
+1. **HTTP-пароль**: логин `pma`, пароль `MindBasePma!`
+2. **MySQL**: `mindbase` / `mindbase` или `root` / `root`
 
-```yaml
-MB_SITE_URL: http://mindbase-innim.ru
-```
+Сменить HTTP-пароль: `htpasswd -B docker/phpmyadmin/.htpasswd pma`, затем `docker compose up -d phpmyadmin`.
 
-Используется для canonical, Open Graph и sitemap. Локально можно временно переопределить через `environment` сервиса `php`.
+### SEO
 
 Публичные SEO-файлы:
 
@@ -79,5 +93,6 @@ MB_SITE_URL: http://mindbase-innim.ru
 
 - `database/tables.sql` — схема БД
 - `database/seed.php` — демо-данные
+- `docker/caddy/Caddyfile` — HTTPS и reverse proxy
 - `lib/knowledge.php` — работа с контентом
 - `lib/auth.php` — пользователи и сессии
