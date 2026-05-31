@@ -39,14 +39,9 @@ Docker **не** занимает порт 80/443 — только `127.0.0.1:808
 
 **URL:** https://mindbase-innim.ru/phpmyadmin/
 
-**Два шага входа:**
+**MySQL:** `mindbase` / `mindbase` или `root` / `root`
 
-1. **HTTP-пароль**: логин `pma`, пароль `MindBasePma!`
-2. **MySQL**: `mindbase` / `mindbase` или `root` / `root`
-
-Сменить HTTP-пароль: `htpasswd -B docker/phpmyadmin/.htpasswd pma`, затем `docker compose up -d phpmyadmin`.
-
-**SSH-туннель** (без открытия 8080 наружу):
+**SSH-туннель** (локальный доступ без nginx):
 
 ```bash
 ssh -L 8080:127.0.0.1:8080 user@сервер
@@ -76,7 +71,6 @@ MB_SITE_URL: http://mindbase-innim.ru
 | admin@mindbase.local | admin12345 | Администратор — полный доступ |
 | editor@mindbase.local | editor12345 | Редактор — статьи, разделы, загрузка файлов |
 | demo@mindbase.local | demo12345 | Пользователь — только чтение (группа «Разработка») |
-
 ## Локально без Docker
 
 1. MySQL 8, база `mindbase`, пользователь с правами на неё.
