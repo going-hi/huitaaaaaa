@@ -89,29 +89,31 @@ mb_seo_render_head([
   <div class="noise" aria-hidden="true"></div>
 
   <header class="header">
-    <nav class="nav container" aria-label="Основная навигация">
+    <div class="container site-header-inner">
       <a href="index.php" class="logo" aria-label="MindBase — на главную">
         <img src="logo-icon.png" alt="Логотип MindBase" class="logo-img" width="36" height="36">
         <span>MindBase</span>
       </a>
-      <ul class="nav-links">
-        <li><a href="index.php#about">О платформе</a></li>
-        <li><a href="index.php#features">Возможности</a></li>
-        <li><a href="index.php#audience">Для кого</a></li>
-        <li><a href="index.php#how">Как это работает</a></li>
-        <li><a href="index.php#faq">Вопросы</a></li>
-        <?php if ($user !== null): ?>
-        <li><a href="cabinet.php" class="btn btn-ghost">Личный кабинет</a></li>
-        <li><a href="logout.php" class="btn btn-outline">Выйти</a></li>
-        <?php else: ?>
-        <li><a href="login.php" class="btn btn-ghost">Войти</a></li>
-        <li><a href="register.php" class="btn btn-primary">Начать бесплатно</a></li>
-        <?php endif; ?>
-      </ul>
-      <button class="nav-toggle" aria-label="Открыть меню" aria-expanded="false">
+      <nav class="site-nav" id="site-nav" aria-label="Основная навигация">
+        <ul class="nav-links">
+          <li><a href="index.php#about">О платформе</a></li>
+          <li><a href="index.php#features">Возможности</a></li>
+          <li><a href="index.php#audience">Для кого</a></li>
+          <li><a href="index.php#how">Как это работает</a></li>
+          <li><a href="index.php#faq">Вопросы</a></li>
+          <?php if ($user !== null): ?>
+          <li><a href="cabinet.php" class="btn btn-ghost">Личный кабинет</a></li>
+          <li><a href="logout.php" class="btn btn-outline">Выйти</a></li>
+          <?php else: ?>
+          <li><a href="login.php" class="btn btn-ghost">Войти</a></li>
+          <li><a href="register.php" class="btn btn-primary">Начать бесплатно</a></li>
+          <?php endif; ?>
+        </ul>
+      </nav>
+      <button type="button" class="nav-toggle" aria-label="Открыть меню" aria-expanded="false" aria-controls="site-nav">
         <span></span><span></span><span></span>
       </button>
-    </nav>
+    </div>
   </header>
 
   <main id="main-content">
@@ -168,37 +170,62 @@ mb_seo_render_head([
             </div>
           </div>
         </div>
-        <figcaption class="visually-hidden">Скриншот интерфейса корпоративной wiki MindBase с поиском и разделами</figcaption>
       </figure>
     </section>
 
     <section id="about" class="section about" aria-labelledby="about-title">
       <div class="container">
-        <header class="section-header">
-          <p class="section-badge">О платформе</p>
-          <h2 class="section-title" id="about-title">Онлайн-база знаний и корпоративная wiki для бизнеса</h2>
-          <p class="section-lead">MindBase помогает командам централизовать документацию, регламенты и экспертизу — без сложного внедрения и ежемесячной оплаты.</p>
-        </header>
-        <article class="about-content">
-          <p>
-            Если вы ищете <strong>бесплатную базу знаний для компании</strong> или <strong>wiki для команды</strong>,
-            MindBase даёт готовую структуру: разделы, статьи, роли, документы и обучение.
-            Это удобная альтернатива Notion и Confluence для внутренней документации, когда нужен
-            фокус на <strong>управлении знаниями</strong>, а не на универсальном редакторе.
-          </p>
-          <p>
-            Платформа подходит для IT-отделов, поддержки, HR, продаж и продуктовых команд:
-            храните инструкции, FAQ, onboarding-материалы и корпоративные стандарты в одной
-            <strong>корпоративной базе знаний</strong> с быстрым поиском и понятными правами доступа.
-          </p>
-          <ul class="about-list">
-            <li>Корпоративная wiki с иерархией разделов и Markdown-статьями</li>
-            <li>Полнотекстовый поиск по документации команды</li>
-            <li>Роли, группы доступа и несколько рабочих пространств</li>
-            <li>Реестр документов, курсы и экспорт в Markdown</li>
-            <li>Бесплатно — без лимитов на участников и статьи</li>
-          </ul>
-        </article>
+        <div class="about-grid">
+          <header class="about-intro">
+            <p class="section-badge">О платформе</p>
+            <h2 class="section-title" id="about-title">Онлайн-база знаний и корпоративная wiki для бизнеса</h2>
+            <p class="about-text">
+              MindBase — бесплатная платформа для команд: документация, регламенты и экспертиза
+              в одной структуре с поиском и правами доступа. Без подписок, лимитов и долгого внедрения.
+            </p>
+            <p class="about-text about-text-muted">
+              Подходит как wiki для IT, поддержки, HR и продаж — альтернатива Notion и Confluence,
+              когда нужна именно корпоративная база знаний, а не универсальный редактор.
+            </p>
+          </header>
+          <div class="about-highlights">
+            <article class="about-card">
+              <span class="about-card-icon" aria-hidden="true">📚</span>
+              <div>
+                <h3>Wiki и разделы</h3>
+                <p>Иерархия, Markdown-статьи и каталог материалов компании.</p>
+              </div>
+            </article>
+            <article class="about-card">
+              <span class="about-card-icon" aria-hidden="true">🔍</span>
+              <div>
+                <h3>Поиск</h3>
+                <p>Полнотекстовый поиск по документации команды за секунды.</p>
+              </div>
+            </article>
+            <article class="about-card">
+              <span class="about-card-icon" aria-hidden="true">👥</span>
+              <div>
+                <h3>Доступы</h3>
+                <p>Роли, группы и несколько рабочих пространств.</p>
+              </div>
+            </article>
+            <article class="about-card">
+              <span class="about-card-icon" aria-hidden="true">📎</span>
+              <div>
+                <h3>Документы</h3>
+                <p>Реестр файлов, курсы и экспорт в Markdown.</p>
+              </div>
+            </article>
+            <article class="about-card about-card-accent">
+              <span class="about-card-icon" aria-hidden="true">✨</span>
+              <div>
+                <h3>Бесплатно</h3>
+                <p>Без лимитов на участников, статьи и рабочие пространства.</p>
+              </div>
+            </article>
+          </div>
+        </div>
       </div>
     </section>
 

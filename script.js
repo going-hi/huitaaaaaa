@@ -1,19 +1,38 @@
 (function () {
   'use strict';
 
-  // Мобильное меню
   const navToggle = document.querySelector('.nav-toggle');
   const navLinks = document.querySelector('.nav-links');
 
+  function setMenuOpen(open) {
+    if (!navToggle || !navLinks) {
+      return;
+    }
+    navToggle.classList.toggle('is-open', open);
+    navLinks.classList.toggle('is-open', open);
+    document.body.classList.toggle('menu-open', open);
+    navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    navToggle.setAttribute('aria-label', open ? 'Закрыть меню' : 'Открыть меню');
+  }
+
   if (navToggle && navLinks) {
     navToggle.addEventListener('click', function () {
-      navToggle.classList.toggle('is-open');
-      navLinks.classList.toggle('is-open');
-      document.body.classList.toggle('menu-open');
+      setMenuOpen(!navLinks.classList.contains('is-open'));
+    });
+
+    navLinks.querySelectorAll('a').forEach(function (link) {
+      link.addEventListener('click', function () {
+        setMenuOpen(false);
+      });
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        setMenuOpen(false);
+      }
     });
   }
 
-  // Плавное появление секций при скролле
   const sections = document.querySelectorAll('.section, .hero-visual, .step');
 
   const observerOptions = {
@@ -37,7 +56,6 @@
     observer.observe(el);
   });
 
-  // Стили для видимости при появлении
   const style = document.createElement('style');
   style.textContent = `
     .section.is-visible,
@@ -46,32 +64,6 @@
       opacity: 1 !important;
       transform: translateY(0) !important;
     }
-    .nav-links.is-open {
-      display: flex !important;
-      position: fixed;
-      top: 72px;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      flex-direction: column;
-      justify-content: center;
-      gap: 24px;
-      background: rgba(15, 15, 18, 0.98);
-      backdrop-filter: blur(12px);
-    }
-    .nav-toggle.is-open span:nth-child(1) {
-      transform: rotate(45deg) translate(5px, 5px);
-    }
-    .nav-toggle.is-open span:nth-child(2) {
-      opacity: 0;
-    }
-    .nav-toggle.is-open span:nth-child(3) {
-      transform: rotate(-45deg) translate(5px, -5px);
-    }
-    .nav-toggle span {
-      transition: transform 0.25s ease, opacity 0.25s ease;
-    }
-    body.menu-open { overflow: hidden; }
   `;
   document.head.appendChild(style);
 })();
