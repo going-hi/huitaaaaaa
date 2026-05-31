@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Disallow: /cabinet.php
+Disallow: /cabinet-
+Disallow: /knowledge-catalog.php
+Disallow: /category.php
+Disallow: /article.php
+Disallow: /search.php
+Disallow: /documents.php
+Disallow: /learning-materials.php
+Disallow: /course.php
+Disallow: /admin-
+Disallow: /export.php
+Disallow: /storage/
+Disallow: /database/
+Disallow: /lib/
+
+Sitemap: https://mindbase-innim.ru/sitemap.xml

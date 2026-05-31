@@ -166,13 +166,3 @@ function mb_seo_landing_json_ld(string $pageUrl, array $faqItems): array
         ],
     ];
 }
-
-/** @return list<array{loc:string,changefreq:string,priority:string}> */
-function mb_seo_public_sitemap_entries(): array
-{
-    return [
-        ['loc' => mb_seo_absolute_url('/'), 'changefreq' => 'weekly', 'priority' => '1.0'],
-        ['loc' => mb_seo_absolute_url('register.php'), 'changefreq' => 'monthly', 'priority' => '0.8'],
-        ['loc' => mb_seo_absolute_url('login.php'), 'changefreq' => 'monthly', 'priority' => '0.5'],
-    ];
-}
