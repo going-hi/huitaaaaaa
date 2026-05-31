@@ -9,17 +9,19 @@ docker compose up -d --build
 docker compose exec php php database/seed.php
 ```
 
-Откройте http://localhost
+Откройте http://localhost (локально) или http://mindbase-innim.ru (production).
+
+phpMyAdmin: http://localhost:8080 — логин `mindbase` / `mindbase` (или root / root).
 
 ### SEO и продвижение
 
-Для production задайте публичный URL сайта:
+Публичный URL сайта задан в `docker-compose.yml`:
 
-```bash
-MB_SITE_URL=https://your-domain.ru
+```yaml
+MB_SITE_URL: http://mindbase-innim.ru
 ```
 
-В Docker добавьте переменную в сервис `php` в `docker-compose.yml`.
+Используется для canonical, Open Graph и sitemap. Локально можно временно переопределить через `environment` сервиса `php`.
 
 Публичные SEO-файлы:
 
