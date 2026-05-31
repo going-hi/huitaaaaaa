@@ -66,9 +66,13 @@ $oldEmail = mb_flash_take('register_email') ?? '';
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?php
 mb_seo_render_head([
-    'title' => 'Регистрация — создать бесплатную базу знаний MindBase',
-    'description' => 'Зарегистрируйтесь в MindBase за минуту и создайте бесплатную корпоративную базу знаний для команды: статьи, разделы, поиск и доступы.',
+    'title' => 'Регистрация — база знаний MindBase от ООО «Инним»',
+    'description' => 'Создайте бесплатную базу знаний MindBase от ООО «Инним» (Innim): корпоративная wiki для команды — статьи, разделы, поиск и доступы. Регистрация за минуту.',
     'path' => 'register.php',
+    'keywords' => [
+        'MindBase', 'MindBase Инним', 'MindBase от Инним', 'база знаний Инним', 'Innim', 'ООО Инним',
+        'регистрация MindBase', 'создать базу знаний', 'бесплатная wiki',
+    ],
     'robots' => 'index, follow',
 ]);
 ?>

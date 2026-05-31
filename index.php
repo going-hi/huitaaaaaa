@@ -38,11 +38,51 @@ $faqItems = [
         'question' => 'Подходит ли MindBase как альтернатива Notion для команды?',
         'answer' => 'Да, если нужна именно база знаний и wiki, а не универсальный редактор. MindBase бесплатен, заточен под статьи, доступы и поиск по документации команды.',
     ],
+    [
+        'question' => 'Кто разработал MindBase?',
+        'answer' => 'MindBase — продукт ООО «Инним» (Innim). Компания разрабатывает инструменты для команд и управления знаниями; платформа распространяется бесплатно без тарифов и лимитов.',
+    ],
 ];
 
-$seoTitle = 'MindBase — бесплатная корпоративная wiki и база знаний для команд';
-$seoDescription = 'MindBase — бесплатная платформа корпоративной wiki и базы знаний: Markdown-статьи, полнотекстовый поиск, роли, документы и обучение. Без тарифов и лимитов — альтернатива Notion и Confluence. Регистрация за минуту.';
+$seoTitle = 'MindBase от ООО «Инним» — бесплатная корпоративная wiki и база знаний';
+$seoDescription = 'MindBase — бесплатная база знаний от ООО «Инним» (Innim): корпоративная wiki с Markdown, поиском, ролями, документами и обучением. Без тарифов и лимитов — альтернатива Notion и Confluence.';
 $seoKeywords = [
+    // Бренд ООО «Инним» / Innim
+    'ООО Инним',
+    'ООО «Инним»',
+    'Инним',
+    'ИННИМ',
+    'Innim',
+    'innim',
+    'innim база знаний',
+    'инним база знаний',
+    'база знаний Инним',
+    'база знаний от Инним',
+    'база знаний от ООО Инним',
+    'wiki Инним',
+    'wiki от Инним',
+    'корпоративная wiki Инним',
+    'MindBase Инним',
+    'MindBase от Инним',
+    'MindBase ООО Инним',
+    'MindBase innim',
+    'mindbase innim',
+    'mindbase-innim',
+    'mindbase-innim.ru',
+    'MindBase от Innim',
+    'платформа Инним',
+    'MindBase разработчик Инним',
+    'бесплатная база знаний Инним',
+    'бесплатная wiki Инним',
+    'innim wiki',
+    'инним wiki',
+    'innim knowledge base',
+    'Innim MindBase',
+    'Innim база знаний',
+    'Innim corporate wiki',
+    'корпоративная база знаний Innim',
+    'управление знаниями Инним',
+    'MindBase Innim',
     // Ядро — база знаний / wiki
     'база знаний',
     'корпоративная wiki',
@@ -295,7 +335,7 @@ mb_seo_render_head([
         <div class="hero-orb hero-orb-3"></div>
       </div>
       <div class="container hero-inner">
-        <p class="hero-badge">Бесплатная корпоративная wiki и база знаний</p>
+        <p class="hero-badge">MindBase от ООО «Инним» — бесплатная корпоративная wiki</p>
         <h1 class="hero-title" id="hero-title">
           Бесплатная база знаний<br>
           <span class="gradient-text">для команд и компаний</span>
@@ -349,7 +389,7 @@ mb_seo_render_head([
             <p class="section-badge">О платформе</p>
             <h2 class="section-title" id="about-title">Онлайн-база знаний и корпоративная wiki для бизнеса</h2>
             <p class="about-text">
-              MindBase — бесплатная платформа для команд: документация, регламенты и экспертиза
+              MindBase — бесплатная платформа от <strong>ООО «Инним»</strong> для команд: документация, регламенты и экспертиза
               в одной структуре с поиском и правами доступа. Без подписок, лимитов и долгого внедрения.
             </p>
             <p class="about-text about-text-muted">
@@ -561,7 +601,7 @@ mb_seo_render_head([
             <img src="innim-logo.png" alt="Логотип ООО Инним" class="innim-logo-img" width="48" height="48" loading="lazy">
             <span class="innim-logo">ИННИМ</span>
           </div>
-          <p class="innim-desc">Платформа MindBase создана на базе <strong>ООО «Инним»</strong> — мы делаем инструменты для команд и управления знаниями.</p>
+          <p class="innim-desc">MindBase — база знаний на базе <strong>ООО «Инним»</strong> (Innim). Мы разрабатываем инструменты для команд: корпоративная wiki, документы и управление знаниями — бесплатно и без лимитов.</p>
         </article>
       </div>
     </section>
