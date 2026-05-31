@@ -76,6 +76,7 @@ services:
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
+      PMA_ABSOLUTE_URI: https://mindbase-innim.ru/phpmyadmin/
       UPLOAD_LIMIT: 64M
     volumes:
       - ./docker/phpmyadmin/allow-htaccess.conf:/etc/apache2/conf-enabled/98-allow-htaccess.conf:ro

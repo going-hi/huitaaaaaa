@@ -11,7 +11,7 @@ docker compose exec php php database/seed.php
 
 Откройте http://localhost:8081 (локально, Docker) или https://mindbase-innim.ru (production за nginx).
 
-phpMyAdmin: http://127.0.0.1:8080 на сервере или SSH-туннель (см. ниже).
+phpMyAdmin: https://mindbase-innim.ru/phpmyadmin/ (или SSH-туннель на `127.0.0.1:8080`).
 
 ### HTTPS (nginx + Let's Encrypt на сервере)
 
@@ -36,6 +36,8 @@ Docker **не** занимает порт 80/443 — только `127.0.0.1:808
 Если certbot пишет `bind() to 0.0.0.0:80 failed` — порт 80 занят Docker. Выполните `sudo ss -tlnp | grep ':80 '` и убедитесь, что после `git pull` php слушает **8081**, не 80.
 
 ### phpMyAdmin
+
+**URL:** https://mindbase-innim.ru/phpmyadmin/
 
 **Два шага входа:**
 
