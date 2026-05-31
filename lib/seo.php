@@ -73,6 +73,7 @@ function mb_seo_render_head(array $config): void
     }
     echo '  <meta name="robots" content="' . mb_h($robots) . "\">\n";
     echo '  <meta name="author" content="MindBase, ООО «Инним»">' . "\n";
+    echo '  <meta name="application-name" content="MindBase">' . "\n";
     echo '  <meta name="theme-color" content="#0f0f12">' . "\n";
     echo '  <link rel="canonical" href="' . mb_h($canonical) . "\">\n";
     echo '  <link rel="alternate" hreflang="ru" href="' . mb_h($canonical) . "\">\n";
@@ -125,13 +126,24 @@ function mb_seo_landing_json_ld(string $pageUrl, array $faqItems): array
 
     return [
         [
+            '@type' => 'WebPage',
+            '@id' => $pageUrl . '#webpage',
+            'url' => $pageUrl,
+            'name' => 'MindBase — бесплатная корпоративная wiki и база знаний',
+            'description' => 'Бесплатная онлайн-платформа для корпоративной wiki, управления знаниями и документации команды.',
+            'inLanguage' => 'ru-RU',
+            'isPartOf' => ['@id' => $websiteId],
+            'about' => ['@id' => $appId],
+            'publisher' => ['@id' => $orgId],
+        ],
+        [
             '@type' => 'Organization',
             '@id' => $orgId,
             'name' => 'MindBase',
             'legalName' => 'ООО «Инним»',
             'url' => $pageUrl,
             'logo' => mb_seo_absolute_url('logo-icon.png'),
-            'description' => 'Разработчик бесплатной платформы корпоративной базы знаний MindBase для команд и компаний.',
+            'description' => 'Разработчик бесплатной платформы корпоративной базы знаний и wiki MindBase для команд и компаний.',
             'sameAs' => [],
         ],
         [
@@ -139,7 +151,7 @@ function mb_seo_landing_json_ld(string $pageUrl, array $faqItems): array
             '@id' => $websiteId,
             'url' => $pageUrl,
             'name' => 'MindBase',
-            'description' => 'Бесплатная платформа базы знаний для команд: статьи, поиск, роли, документы и обучение.',
+            'description' => 'Бесплатная корпоративная wiki и база знаний: статьи, поиск, роли, документы и обучение для команд.',
             'inLanguage' => 'ru-RU',
             'publisher' => ['@id' => $orgId],
         ],
@@ -148,9 +160,11 @@ function mb_seo_landing_json_ld(string $pageUrl, array $faqItems): array
             '@id' => $appId,
             'name' => 'MindBase',
             'applicationCategory' => 'BusinessApplication',
+            'applicationSubCategory' => 'Knowledge Management',
             'operatingSystem' => 'Web',
             'url' => $pageUrl,
-            'description' => 'Корпоративная wiki и база знаний: Markdown-статьи, иерархия разделов, группы доступа, документы и курсы.',
+            'description' => 'Корпоративная wiki и база знаний: Markdown-статьи, иерархия разделов, группы доступа, документы и курсы. Альтернатива Notion и Confluence.',
+            'featureList' => 'Поиск по статьям, Markdown-редактор, роли и группы доступа, документы, обучение, экспорт',
             'offers' => [
                 '@type' => 'Offer',
                 'price' => '0',

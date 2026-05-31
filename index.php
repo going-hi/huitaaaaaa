@@ -30,19 +30,37 @@ $faqItems = [
         'question' => 'Чем MindBase отличается от Notion и Confluence?',
         'answer' => 'MindBase — бесплатная специализированная база знаний с фокусом на структуру разделов, группы доступа, документы и обучение без платных тарифов и лимитов.',
     ],
+    [
+        'question' => 'Можно ли использовать MindBase как корпоративную wiki?',
+        'answer' => 'Да. MindBase — это корпоративная wiki с разделами, ролями и поиском: подходит для внутренней документации, регламентов и базы ответов поддержки.',
+    ],
+    [
+        'question' => 'Подходит ли MindBase как альтернатива Notion для команды?',
+        'answer' => 'Да, если нужна именно база знаний и wiki, а не универсальный редактор. MindBase бесплатен, заточен под статьи, доступы и поиск по документации команды.',
+    ],
 ];
 
-$seoTitle = 'MindBase — бесплатная база знаний для команд и компаний';
-$seoDescription = 'MindBase — бесплатная платформа корпоративной базы знаний: статьи в Markdown, поиск, роли, документы и обучение. Быстрый старт для команд любого размера. Разработано ООО «Инним».';
+$seoTitle = 'MindBase — бесплатная корпоративная wiki и база знаний для команд';
+$seoDescription = 'Создайте бесплатную базу знаний для компании: статьи в Markdown, полнотекстовый поиск, роли, документы и обучение. Корпоративная wiki без лимитов и подписок — регистрация за минуту.';
 $seoKeywords = [
     'база знаний',
     'корпоративная wiki',
     'wiki для команды',
     'база знаний компании',
+    'корпоративная база знаний',
     'управление знаниями',
+    'knowledge management',
+    'внутренняя wiki',
+    'wiki для бизнеса',
     'документация команды',
-    'MindBase',
+    'база знаний онлайн',
+    'бесплатная wiki',
     'бесплатная база знаний',
+    'альтернатива Notion',
+    'альтернатива Confluence',
+    'корпоративная документация',
+    'обмен знаниями в команде',
+    'MindBase',
 ];
 ?>
 <!DOCTYPE html>
@@ -77,6 +95,7 @@ mb_seo_render_head([
         <span>MindBase</span>
       </a>
       <ul class="nav-links">
+        <li><a href="index.php#about">О платформе</a></li>
         <li><a href="index.php#features">Возможности</a></li>
         <li><a href="index.php#audience">Для кого</a></li>
         <li><a href="index.php#how">Как это работает</a></li>
@@ -105,14 +124,15 @@ mb_seo_render_head([
         <div class="hero-orb hero-orb-3"></div>
       </div>
       <div class="container hero-inner">
-        <p class="hero-badge">Бесплатная платформа базы знаний</p>
+        <p class="hero-badge">Бесплатная корпоративная wiki и база знаний</p>
         <h1 class="hero-title" id="hero-title">
-          Корпоративная база знаний<br>
-          <span class="gradient-text">для всей команды</span>
+          Бесплатная база знаний<br>
+          <span class="gradient-text">для команд и компаний</span>
         </h1>
         <p class="hero-desc">
-          MindBase помогает создавать, структурировать и находить знания за секунды:
-          документация, инструкции, runbook'и и лучшие практики в одном месте.
+          <strong>MindBase</strong> — платформа управления знаниями для бизнеса: корпоративная wiki,
+          техническая документация, инструкции, runbook'и и лучшие практики в одном месте.
+          Полнотекстовый поиск, Markdown-статьи и гибкие права доступа — без платных тарифов.
           Разработано <a href="#innim" class="innim-ref">ООО «Инним»</a>.
         </p>
         <div class="hero-actions">
@@ -124,22 +144,22 @@ mb_seo_render_head([
           <?php endif; ?>
         </div>
       </div>
-      <div class="hero-visual" aria-hidden="true">
-        <div class="mockup">
+      <figure class="hero-visual">
+        <div class="mockup" role="img" aria-label="Интерфейс MindBase: поиск по базе знаний, разделы и статьи">
           <div class="mockup-bar">
-            <span class="mockup-dot"></span>
-            <span class="mockup-dot"></span>
-            <span class="mockup-dot"></span>
+            <span class="mockup-dot" aria-hidden="true"></span>
+            <span class="mockup-dot" aria-hidden="true"></span>
+            <span class="mockup-dot" aria-hidden="true"></span>
             <span class="mockup-search">Поиск по базе знаний...</span>
           </div>
           <div class="mockup-content">
-            <div class="mockup-sidebar">
+            <div class="mockup-sidebar" aria-hidden="true">
               <div class="mockup-item active"></div>
               <div class="mockup-item"></div>
               <div class="mockup-item"></div>
               <div class="mockup-item"></div>
             </div>
-            <div class="mockup-main">
+            <div class="mockup-main" aria-hidden="true">
               <div class="mockup-line w100"></div>
               <div class="mockup-line w80"></div>
               <div class="mockup-line w60"></div>
@@ -148,14 +168,47 @@ mb_seo_render_head([
             </div>
           </div>
         </div>
+        <figcaption class="visually-hidden">Скриншот интерфейса корпоративной wiki MindBase с поиском и разделами</figcaption>
+      </figure>
+    </section>
+
+    <section id="about" class="section about" aria-labelledby="about-title">
+      <div class="container">
+        <header class="section-header">
+          <p class="section-badge">О платформе</p>
+          <h2 class="section-title" id="about-title">Онлайн-база знаний и корпоративная wiki для бизнеса</h2>
+          <p class="section-lead">MindBase помогает командам централизовать документацию, регламенты и экспертизу — без сложного внедрения и ежемесячной оплаты.</p>
+        </header>
+        <article class="about-content">
+          <p>
+            Если вы ищете <strong>бесплатную базу знаний для компании</strong> или <strong>wiki для команды</strong>,
+            MindBase даёт готовую структуру: разделы, статьи, роли, документы и обучение.
+            Это удобная альтернатива Notion и Confluence для внутренней документации, когда нужен
+            фокус на <strong>управлении знаниями</strong>, а не на универсальном редакторе.
+          </p>
+          <p>
+            Платформа подходит для IT-отделов, поддержки, HR, продаж и продуктовых команд:
+            храните инструкции, FAQ, onboarding-материалы и корпоративные стандарты в одной
+            <strong>корпоративной базе знаний</strong> с быстрым поиском и понятными правами доступа.
+          </p>
+          <ul class="about-list">
+            <li>Корпоративная wiki с иерархией разделов и Markdown-статьями</li>
+            <li>Полнотекстовый поиск по документации команды</li>
+            <li>Роли, группы доступа и несколько рабочих пространств</li>
+            <li>Реестр документов, курсы и экспорт в Markdown</li>
+            <li>Бесплатно — без лимитов на участников и статьи</li>
+          </ul>
+        </article>
       </div>
     </section>
 
     <section id="features" class="section features" aria-labelledby="features-title">
       <div class="container">
-        <p class="section-badge">Возможности</p>
-        <h2 class="section-title" id="features-title">Всё для эффективной работы с базой знаний</h2>
-        <p class="section-lead">Wiki-платформа с поиском, иерархией разделов и гибкими правами доступа для отделов и проектов.</p>
+        <header class="section-header">
+          <p class="section-badge">Возможности</p>
+          <h2 class="section-title" id="features-title">Инструменты корпоративной базы знаний</h2>
+          <p class="section-lead">Wiki-платформа с поиском, иерархией разделов и гибкими правами доступа для отделов и проектов.</p>
+        </header>
         <div class="features-grid">
           <article class="feature-card">
             <div class="feature-icon" aria-hidden="true">🔍</div>
@@ -188,8 +241,10 @@ mb_seo_render_head([
 
     <section id="audience" class="section audience" aria-labelledby="audience-title">
       <div class="container">
-        <p class="section-badge">Для кого</p>
-        <h2 class="section-title" id="audience-title">База знаний для команд любого профиля</h2>
+        <header class="section-header">
+          <p class="section-badge">Для кого</p>
+          <h2 class="section-title" id="audience-title">Wiki и база знаний для команд любого профиля</h2>
+        </header>
         <div class="audience-grid">
           <article class="audience-card">
             <div class="audience-icon" aria-hidden="true">💻</div>
@@ -217,45 +272,49 @@ mb_seo_render_head([
 
     <section id="why" class="section why" aria-labelledby="why-title">
       <div class="container">
-        <p class="section-badge">Почему MindBase</p>
-        <h2 class="section-title" id="why-title">Просто, бесплатно и без скрытых условий</h2>
+        <header class="section-header">
+          <p class="section-badge">Почему MindBase</p>
+          <h2 class="section-title" id="why-title">Простая корпоративная wiki без скрытых условий</h2>
+        </header>
         <div class="why-grid">
-          <div class="why-item">
+          <article class="why-item">
             <span class="why-num" aria-hidden="true">1</span>
             <div class="why-item-text">
               <h3>Полностью бесплатно</h3>
               <p>Никаких платных тарифов и ограничений по числу статей или участников.</p>
             </div>
-          </div>
-          <div class="why-item">
+          </article>
+          <article class="why-item">
             <span class="why-num" aria-hidden="true">2</span>
             <div class="why-item-text">
               <h3>Быстрый старт</h3>
               <p>Регистрация за минуту, первый раздел — за пять. Без сложной настройки.</p>
             </div>
-          </div>
-          <div class="why-item">
+          </article>
+          <article class="why-item">
             <span class="why-num" aria-hidden="true">3</span>
             <div class="why-item-text">
               <h3>Ваши данные под контролем</h3>
               <p>Понятные настройки доступа, роли и возможность экспорта в любой момент.</p>
             </div>
-          </div>
-          <div class="why-item">
+          </article>
+          <article class="why-item">
             <span class="why-num" aria-hidden="true">4</span>
             <div class="why-item-text">
               <h3>Рост вместе с вами</h3>
               <p>От личных заметок до корпоративной базы — масштабируйте без смены инструмента.</p>
             </div>
-          </div>
+          </article>
         </div>
       </div>
     </section>
 
     <section id="how" class="section how" aria-labelledby="how-title">
       <div class="container">
-        <p class="section-badge">Как это работает</p>
-        <h2 class="section-title" id="how-title">Три шага к единой базе знаний</h2>
+        <header class="section-header">
+          <p class="section-badge">Как это работает</p>
+          <h2 class="section-title" id="how-title">Три шага к единой базе знаний компании</h2>
+        </header>
         <ol class="steps">
           <li class="step">
             <span class="step-num" aria-hidden="true">01</span>
@@ -278,13 +337,17 @@ mb_seo_render_head([
 
     <section id="faq" class="section faq" aria-labelledby="faq-title">
       <div class="container">
-        <p class="section-badge">Вопросы и ответы</p>
-        <h2 class="section-title" id="faq-title">Частые вопросы о MindBase</h2>
+        <header class="section-header">
+          <p class="section-badge">Вопросы и ответы</p>
+          <h2 class="section-title" id="faq-title">Частые вопросы о корпоративной wiki MindBase</h2>
+        </header>
         <div class="faq-list">
           <?php foreach ($faqItems as $faq): ?>
           <details class="faq-item">
             <summary class="faq-question"><?= mb_h($faq['question']) ?></summary>
-            <p class="faq-answer"><?= mb_h($faq['answer']) ?></p>
+            <div class="faq-answer">
+              <p><?= mb_h($faq['answer']) ?></p>
+            </div>
           </details>
           <?php endforeach; ?>
         </div>
@@ -293,42 +356,44 @@ mb_seo_render_head([
 
     <section id="innim" class="section innim-block" aria-labelledby="innim-title">
       <div class="container">
-        <p class="section-badge">Партнёр</p>
-        <h2 class="section-title" id="innim-title">Разработано в ООО «Инним»</h2>
-        <div class="innim-content">
+        <header class="section-header">
+          <p class="section-badge">Партнёр</p>
+          <h2 class="section-title" id="innim-title">Разработано в ООО «Инним»</h2>
+        </header>
+        <article class="innim-content">
           <div class="innim-logo-wrap">
             <img src="innim-logo.png" alt="Логотип ООО Инним" class="innim-logo-img" width="48" height="48" loading="lazy">
             <span class="innim-logo">ИННИМ</span>
           </div>
-          <p class="innim-desc">Платформа MindBase создана на базе ООО «Инним» — мы делаем инструменты для команд и управления знаниями.</p>
-        </div>
+          <p class="innim-desc">Платформа MindBase создана на базе <strong>ООО «Инним»</strong> — мы делаем инструменты для команд и управления знаниями.</p>
+        </article>
       </div>
     </section>
 
-    <section class="cta" aria-labelledby="cta-title">
+    <aside class="cta" aria-labelledby="cta-title">
       <div class="cta-bg" aria-hidden="true"></div>
       <div class="container cta-inner">
-        <h2 id="cta-title">Готовы собрать базу знаний?</h2>
-        <p>Платформа полностью бесплатна. Присоединяйтесь к командам, которые уже используют MindBase.</p>
+        <h2 id="cta-title">Готовы создать корпоративную базу знаний?</h2>
+        <p>Бесплатная wiki для команды — регистрация за минуту, без карты и скрытых тарифов.</p>
         <div class="cta-actions">
           <?php if ($user !== null): ?>
           <a href="cabinet.php" class="btn btn-primary btn-lg">Личный кабинет</a>
           <?php else: ?>
-          <a href="register.php" class="btn btn-primary btn-lg">Начать бесплатно</a>
+          <a href="register.php" class="btn btn-primary btn-lg">Создать бесплатную базу знаний</a>
           <?php endif; ?>
         </div>
       </div>
-    </section>
+    </aside>
   </main>
 
   <footer class="footer">
     <div class="container footer-inner">
       <div class="footer-brand">
         <a href="index.php" class="logo" aria-label="MindBase — на главную">
-          <img src="logo-icon.png" alt="Логотип MindBase" class="logo-img" width="36" height="36" loading="lazy">
+          <img src="logo-icon.png" alt="Логотип MindBase — база знаний для команд" class="logo-img" width="36" height="36" loading="lazy">
           MindBase
         </a>
-        <p>Бесплатная платформа базы знаний для команд. Разработано ООО «Инним».</p>
+        <p>Бесплатная корпоративная wiki и база знаний для команд. Разработано ООО «Инним».</p>
         <a href="#innim" class="innim-logo-footer">
           <img src="innim-logo.png" alt="Логотип ИННИМ" class="innim-logo-footer-img" width="32" height="32" loading="lazy">
           <span>ИННИМ</span>
@@ -336,7 +401,8 @@ mb_seo_render_head([
       </div>
       <nav class="footer-links" aria-label="Ссылки в подвале">
         <div>
-          <h4>Продукт</h4>
+          <p class="footer-heading">Продукт</p>
+          <a href="index.php#about">О платформе</a>
           <a href="index.php#features">Возможности</a>
           <a href="index.php#how">Как начать</a>
           <a href="index.php#faq">Вопросы</a>
@@ -348,13 +414,14 @@ mb_seo_render_head([
           <?php endif; ?>
         </div>
         <div>
-          <h4>Компания</h4>
+          <p class="footer-heading">Компания</p>
           <a href="#innim">О разработчике</a>
           <a href="index.php#audience">Для кого</a>
         </div>
       </nav>
       <div class="footer-bottom">
-        <p>© <?= date('Y') ?> MindBase. Сделано на базе ООО «Инним».</p>
+        <p><small>© <?= date('Y') ?> MindBase — бесплатная база знаний для команд.</small></p>
+        <address class="footer-address">Разработано <a href="#innim">ООО «Инним»</a></address>
       </div>
     </div>
   </footer>
