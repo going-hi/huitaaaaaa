@@ -1,0 +1,4 @@
+AuthType Basic
+AuthName "MindBase phpMyAdmin"
+AuthUserFile /etc/phpmyadmin-auth/.htpasswd
+Require valid-user
