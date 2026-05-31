@@ -156,6 +156,7 @@ function mb_cabinet_head(string $title): void
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <?php mb_seo_render_yandex_metrika(); ?>
   <title><?= mb_h($title) ?> — MindBase</title>
   <?php mb_seo_render_favicons(); ?>
   <?php if ($ws !== null): ?>

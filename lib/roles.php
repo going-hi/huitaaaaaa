@@ -146,6 +146,10 @@ function mb_forbidden_page(string $message): void
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <?php
+    require_once dirname(__DIR__) . '/lib/seo.php';
+    mb_seo_render_yandex_metrika();
+  ?>
   <title>Доступ запрещён — MindBase</title>
   <link rel="stylesheet" href="styles.css">
 </head>

@@ -40,6 +40,25 @@ function mb_seo_render_favicons(): void
     echo '  <link rel="apple-touch-icon" href="apple-touch-icon.png">' . "\n";
 }
 
+function mb_seo_render_yandex_metrika(): void
+{
+    ?>
+  <!-- Yandex.Metrika counter -->
+  <script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=109550166', 'ym');
+
+    ym(109550166, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+  </script>
+  <noscript><div><img src="https://mc.yandex.ru/watch/109550166" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+  <!-- /Yandex.Metrika counter -->
+    <?php
+}
+
 /**
  * @param array{
  *   title: string,
@@ -55,6 +74,8 @@ function mb_seo_render_favicons(): void
  */
 function mb_seo_render_head(array $config): void
 {
+    mb_seo_render_yandex_metrika();
+
     $title = trim($config['title']);
     $description = trim($config['description']);
     $path = $config['path'] ?? '/';
