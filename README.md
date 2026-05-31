@@ -9,39 +9,11 @@ docker compose up -d --build
 docker compose exec php php database/seed.php
 ```
 
-| Среда | Адрес |
-|-------|--------|
-| Локально | http://localhost |
-| Production | https://mindbase-innim.ru |
+Откройте http://localhost (локально) или http://mindbase-innim.ru (production).
 
-HTTPS на production: **Caddy** автоматически получает и обновляет сертификаты **Let's Encrypt**.
+HTTPS настраивается отдельно на сервере (nginx/Caddy и т.п.) — в compose только HTTP на порту 80.
 
-### HTTPS (production)
-
-1. DNS **A-запись**: `mindbase-innim.ru` → IP сервера  
-2. Открыты порты **80** и **443** на сервере и в панели хостинга  
-3. Запуск: `docker compose up -d --build`  
-4. Caddy сам выпустит сертификат (1–2 минуты после первого запроса)
-
-Сертификаты хранятся в Docker-томе `caddy_data`, продление автоматическое.
-
-Публичный URL для SEO:
-
-```yaml
-MB_SITE_URL: https://mindbase-innim.ru
-```
-
-### phpMyAdmin
-
-**Production (HTTPS):** https://pma.mindbase-innim.ru — нужна A-запись `pma` → IP сервера.
-
-**SSH-туннель** (порт 8080 только на localhost сервера):
-
-```bash
-ssh -L 8080:127.0.0.1:8080 user@сервер
-```
-
-Затем http://localhost:8080
+phpMyAdmin: http://localhost:8080 (на сервере — порт 8080 или SSH-туннель).
 
 **Два шага входа:**
 
@@ -50,14 +22,28 @@ ssh -L 8080:127.0.0.1:8080 user@сервер
 
 Сменить HTTP-пароль: `htpasswd -B docker/phpmyadmin/.htpasswd pma`, затем `docker compose up -d phpmyadmin`.
 
+**SSH-туннель** (без открытия 8080 наружу):
+
+```bash
+ssh -L 8080:127.0.0.1:8080 user@сервер
+```
+
+После этого открой http://localhost:8080
+
 ### SEO
+
+Публичный URL в `docker-compose.yml`:
+
+```yaml
+MB_SITE_URL: http://mindbase-innim.ru
+```
+
+После включения HTTPS на сервере смените на `https://...`.
 
 Публичные SEO-файлы:
 
 - `/robots.txt` — правила индексации (закрывает личный кабинет и админку)
 - `/sitemap.xml` — карта публичных страниц (главная, регистрация)
-
-На главной: meta description, Open Graph, Twitter Cards, JSON-LD (Organization, WebSite, SoftwareApplication, FAQPage).
 
 **Учётки:**
 
@@ -93,6 +79,5 @@ ssh -L 8080:127.0.0.1:8080 user@сервер
 
 - `database/tables.sql` — схема БД
 - `database/seed.php` — демо-данные
-- `docker/caddy/Caddyfile` — HTTPS и reverse proxy
 - `lib/knowledge.php` — работа с контентом
 - `lib/auth.php` — пользователи и сессии

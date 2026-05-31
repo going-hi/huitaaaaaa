@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/** Базовый URL сайта (prod: MB_SITE_URL=https://mindbase-innim.ru в docker-compose). */
+/** Базовый URL сайта (prod: MB_SITE_URL=http://mindbase-innim.ru в docker-compose). */
 function mb_site_base_url(): string
 {
     static $cached = null;

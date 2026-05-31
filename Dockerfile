@@ -10,9 +10,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf \
     && sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/sites-available/*.conf
 
-COPY docker/apache/forwarded-https.conf /etc/apache2/conf-available/forwarded-https.conf
-RUN a2enconf forwarded-https
-
 WORKDIR /var/www/html
 
 RUN mkdir -p storage/documents \

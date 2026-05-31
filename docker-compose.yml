@@ -50,8 +50,8 @@ services:
     build: .
     container_name: mindbase-php
     restart: unless-stopped
-    expose:
-      - "80"
+    ports:
+      - "80:80"
     volumes:
       - .:/var/www/html
     environment:
@@ -60,36 +60,19 @@ services:
       MYSQL_USER: mindbase
       MYSQL_PASSWORD: mindbase
       MYSQL_DATABASE: mindbase
-      MB_SITE_URL: https://mindbase-innim.ru
+      MB_SITE_URL: http://mindbase-innim.ru
     depends_on:
       mysql:
         condition: service_healthy
       mysql-bootstrap:
         condition: service_completed_successfully
 
-  caddy:
-    image: caddy:2-alpine
-    container_name: mindbase-caddy
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - php
-      - phpmyadmin
-
   phpmyadmin:
     image: phpmyadmin:5-apache
     container_name: mindbase-phpmyadmin
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8080:80"
-    expose:
-      - "80"
+      - "8080:80"
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
@@ -104,5 +87,3 @@ services:
 volumes:
   mindbase_mysql_data:
   mindbase_mysql_run:
-  caddy_data:
-  caddy_config:
