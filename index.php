@@ -7,7 +7,6 @@ require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/seo.php';
 
 $user = mb_current_user();
-$loginCabinet = 'login.php?' . http_build_query(['next' => 'cabinet.php']);
 $pageUrl = mb_seo_absolute_url('/');
 
 $faqItems = [
@@ -86,7 +85,6 @@ mb_seo_render_head([
         <li><a href="cabinet.php" class="btn btn-ghost">Личный кабинет</a></li>
         <li><a href="logout.php" class="btn btn-outline">Выйти</a></li>
         <?php else: ?>
-        <li><a href="<?= mb_h($loginCabinet) ?>">Личный кабинет</a></li>
         <li><a href="login.php" class="btn btn-ghost">Войти</a></li>
         <li><a href="register.php" class="btn btn-primary">Начать бесплатно</a></li>
         <?php endif; ?>
@@ -346,7 +344,7 @@ mb_seo_render_head([
           <a href="cabinet.php">Личный кабинет</a>
           <?php else: ?>
           <a href="register.php">Регистрация</a>
-          <a href="<?= mb_h($loginCabinet) ?>">Личный кабинет</a>
+          <a href="login.php">Войти</a>
           <?php endif; ?>
         </div>
         <div>
