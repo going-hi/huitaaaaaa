@@ -9,7 +9,7 @@ docker compose up -d --build
 docker compose exec php php database/seed.php
 ```
 
-Откройте http://localhost:8080
+Откройте http://localhost
 
 ### SEO и продвижение
 
@@ -41,7 +41,7 @@ MB_SITE_URL=https://your-domain.ru
 1. MySQL 8, база `mindbase`, пользователь с правами на неё.
 2. Переменные окружения или правка `db.php`: `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`.
 3. `php database/seed.php`
-4. Встроенный сервер PHP: `php -S localhost:8080` из корня проекта.
+4. Встроенный сервер PHP (порт 80 на macOS/Linux обычно требует `sudo`): `sudo php -S 0.0.0.0:80` из корня проекта.
 
 ## Возможности
 
