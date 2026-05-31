@@ -76,9 +76,10 @@ services:
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
-      PMA_USER: mindbase
-      PMA_PASSWORD: mindbase
       UPLOAD_LIMIT: 64M
+    volumes:
+      - ./docker/phpmyadmin/apache-basic-auth.conf:/etc/apache2/conf-enabled/99-basic-auth.conf:ro
+      - ./docker/phpmyadmin/.htpasswd:/etc/phpmyadmin-auth/.htpasswd:ro
     depends_on:
       mysql:
         condition: service_healthy

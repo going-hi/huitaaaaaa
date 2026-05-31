@@ -11,7 +11,22 @@ docker compose exec php php database/seed.php
 
 Откройте http://localhost (локально) или http://mindbase-innim.ru (production).
 
-phpMyAdmin: http://localhost:8080 — логин `mindbase` / `mindbase` (или root / root).
+phpMyAdmin: http://localhost:8080 (на сервере — порт 8080 или SSH-туннель, см. ниже).
+
+**Два шага входа:**
+
+1. **HTTP-пароль** (защита самого phpMyAdmin): логин `pma`, пароль `MindBasePma!`
+2. **MySQL** (форма phpMyAdmin): `mindbase` / `mindbase` или `root` / `root`
+
+Сменить HTTP-пароль: `htpasswd -B docker/phpmyadmin/.htpasswd pma`, затем `docker compose up -d phpmyadmin`.
+
+**SSH-туннель** (без открытия 8080 наружу):
+
+```bash
+ssh -L 8080:127.0.0.1:8080 user@сервер
+```
+
+После этого открой http://localhost:8080
 
 ### SEO и продвижение
 
