@@ -33,11 +33,17 @@ function mb_seo_absolute_url(string $path = '/'): string
     return mb_site_base_url() . '/' . ltrim($path, '/');
 }
 
+/** Фавиконки для браузера и робота Яндекса (абсолютные URL + type по справке Вебмастера). */
 function mb_seo_render_favicons(): void
 {
-    echo '  <link rel="icon" href="favicon.ico" sizes="any">' . "\n";
-    echo '  <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">' . "\n";
-    echo '  <link rel="apple-touch-icon" href="apple-touch-icon.png">' . "\n";
+    $ico = mb_h(mb_seo_absolute_url('favicon.ico'));
+    $png32 = mb_h(mb_seo_absolute_url('favicon-32.png'));
+    $apple = mb_h(mb_seo_absolute_url('apple-touch-icon.png'));
+
+    echo '  <link rel="icon" href="' . $ico . '" type="image/x-icon">' . "\n";
+    echo '  <link rel="shortcut icon" href="' . $ico . '" type="image/x-icon">' . "\n";
+    echo '  <link rel="icon" href="' . $png32 . '" type="image/png" sizes="32x32">' . "\n";
+    echo '  <link rel="apple-touch-icon" href="' . $apple . '" sizes="180x180">' . "\n";
 }
 
 function mb_seo_render_yandex_metrika(): void
@@ -75,6 +81,7 @@ function mb_seo_render_yandex_metrika(): void
 function mb_seo_render_head(array $config): void
 {
     mb_seo_render_yandex_metrika();
+    mb_seo_render_favicons();
 
     $title = trim($config['title']);
     $description = trim($config['description']);

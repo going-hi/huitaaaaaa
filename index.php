@@ -287,7 +287,6 @@ mb_seo_render_head([
     'json_ld' => mb_seo_landing_json_ld($pageUrl, $faqItems),
 ]);
 ?>
-  <?php mb_seo_render_favicons(); ?>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
