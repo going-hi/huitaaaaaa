@@ -1,12 +1,12 @@
--- Выполняется из mysql-bootstrap через сокет (root@localhost).
--- Читать имена пароля синхронно с MYSQL_USER/MYSQL_PASSWORD в docker-compose.yml.
+-- Подставляется через envsubst в mysql-bootstrap (переменные из .env).
+-- MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
 
-CREATE DATABASE IF NOT EXISTS mindbase
+CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE}
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
-CREATE USER IF NOT EXISTS 'mindbase'@'%' IDENTIFIED BY 'mindbase';
-CREATE USER IF NOT EXISTS 'mindbase'@'localhost' IDENTIFIED BY 'mindbase';
-GRANT ALL PRIVILEGES ON mindbase.* TO 'mindbase'@'%';
-GRANT ALL PRIVILEGES ON mindbase.* TO 'mindbase'@'localhost';
+CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'localhost' IDENTIFIED BY '${MYSQL_PASSWORD}';
+GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO '${MYSQL_USER}'@'%';
+GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO '${MYSQL_USER}'@'localhost';
 FLUSH PRIVILEGES;

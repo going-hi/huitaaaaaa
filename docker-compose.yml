@@ -5,12 +5,12 @@ services:
     image: mysql:8.0
     container_name: mindbase-mysql
     restart: unless-stopped
+    env_file: .env
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: mindbase
-      # Учётка приложения со всеми правами только на базу mindbase (обходит ограниченный root@%).
-      MYSQL_USER: mindbase
-      MYSQL_PASSWORD: mindbase
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Задайте MYSQL_ROOT_PASSWORD в .env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-mindbase}
+      MYSQL_USER: ${MYSQL_USER:-mindbase}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Задайте MYSQL_PASSWORD в .env}
     ports:
       - "3306:3306"
     volumes:
@@ -24,12 +24,15 @@ services:
       retries: 10
       start_period: 15s
 
-  # Через сокет делает то, что нельзя ограниченному root@%: база mindbase и пользователь mindbase (совпадает с MYSQL_USER).
   mysql-bootstrap:
     image: mysql:8.0
     restart: no
+    env_file: .env
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-mindbase}
+      MYSQL_USER: ${MYSQL_USER:-mindbase}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - ./database/bootstrap-docker.sql:/bootstrap-docker.sql:ro
       - ./database/tables.sql:/tables.sql:ro
@@ -43,13 +46,15 @@ services:
         set -eu
         export MYSQL_PWD="$$MYSQL_ROOT_PASSWORD"
         SOCK=/var/run/mysqld/mysqld.sock
-        mysql --protocol=SOCKET --socket="$$SOCK" -uroot < /bootstrap-docker.sql
-        mysql --protocol=SOCKET --socket="$$SOCK" -uroot mindbase < /tables.sql
+        envsubst '$$MYSQL_USER $$MYSQL_PASSWORD $$MYSQL_DATABASE' < /bootstrap-docker.sql \
+          | mysql --protocol=SOCKET --socket="$$SOCK" -uroot
+        mysql --protocol=SOCKET --socket="$$SOCK" -uroot "$$MYSQL_DATABASE" < /tables.sql
 
   php:
     build: .
     container_name: mindbase-php
     restart: unless-stopped
+    env_file: .env
     ports:
       - "127.0.0.1:8081:80"
     volumes:
@@ -57,10 +62,10 @@ services:
     environment:
       MYSQL_HOST: mysql
       MYSQL_PORT: "3306"
-      MYSQL_USER: mindbase
-      MYSQL_PASSWORD: mindbase
-      MYSQL_DATABASE: mindbase
-      MB_SITE_URL: https://mindbase-innim.ru
+      MYSQL_USER: ${MYSQL_USER:-mindbase}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-mindbase}
+      MB_SITE_URL: ${MB_SITE_URL:-http://localhost:8081}
     depends_on:
       mysql:
         condition: service_healthy
@@ -71,12 +76,13 @@ services:
     image: phpmyadmin:5-apache
     container_name: mindbase-phpmyadmin
     restart: unless-stopped
+    env_file: .env
     ports:
       - "127.0.0.1:8080:80"
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
-      PMA_ABSOLUTE_URI: https://mindbase-innim.ru/phpmyadmin/
+      PMA_ABSOLUTE_URI: ${MB_SITE_URL:-http://localhost:8081}/phpmyadmin/
       UPLOAD_LIMIT: 64M
     depends_on:
       mysql:

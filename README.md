@@ -5,6 +5,7 @@
 ## Быстрый старт (Docker)
 
 ```bash
+cp .env.example .env   # задайте MYSQL_ROOT_PASSWORD и MYSQL_PASSWORD
 docker compose up -d --build
 docker compose exec php php database/seed.php
 ```
@@ -39,7 +40,7 @@ Docker **не** занимает порт 80/443 — только `127.0.0.1:808
 
 **URL:** https://mindbase-innim.ru/phpmyadmin/
 
-**MySQL:** `mindbase` / `mindbase` или `root` / `root`
+**MySQL:** логин/пароль из `.env` (`MYSQL_USER` / `MYSQL_PASSWORD` или `root` / `MYSQL_ROOT_PASSWORD`)
 
 **SSH-туннель** (локальный доступ без nginx):
 
