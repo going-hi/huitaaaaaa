@@ -626,6 +626,9 @@ function mb_access_group_save(?int $id, string $name, string $description): arra
     if ($name === '') {
         return ['error' => 'Укажите название группы.'];
     }
+    if (!function_exists('mb_ws_id')) {
+        require_once __DIR__ . '/workspace.php';
+    }
     $db = mb_db();
     $wsId = mb_ws_id();
     $slug = mb_group_unique_slug($db, mb_group_slugify($name));
